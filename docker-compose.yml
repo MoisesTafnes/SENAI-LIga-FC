@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: liga_senai_fc_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: senai_fc
+      POSTGRES_USER: administrator_senai
+      POSTGRES_PASSWORD: DBTAFNES
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+
