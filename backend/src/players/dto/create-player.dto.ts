@@ -8,19 +8,18 @@ import {
   Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PlayerPosition } from '../domain/player-calculator.domain';
 
 export class CreatePlayerDto {
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value))
   @Length(3, 100)
   @Matches(/^[a-zA-ZÀ-ÿ\s-]+$/, {
-    message: 'O nome deve conter apenas letras, espaços e hifens',
+    message: 'O nome deve conter apenas letras, espaços e hífens',
   })
   name: string;
 
   @IsEnum(['GOL', 'ZAG', 'LAT', 'MEI', 'ATA'])
-  position: PlayerPosition;
+  position: 'GOL' | 'ZAG' | 'LAT' | 'MEI' | 'ATA';
 
   @IsInt()
   @Min(1)

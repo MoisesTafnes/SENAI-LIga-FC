@@ -1,7 +1,7 @@
-import { IsEnum } from 'class-validator';
-import { PlayerCondition } from '../domain/player-calculator.domain';
+import { IsString, IsIn } from 'class-validator';
 
 export class UpdateConditionDto {
-  @IsEnum(['APTO', 'MAL_CONDICIONADO', 'DOENTE'])
-  condition: PlayerCondition;
+  @IsString()
+  @IsIn(['APTO', 'MAL_CONDICIONADO', 'DOENTE'])
+  condition: 'APTO' | 'MAL_CONDICIONADO' | 'DOENTE';
 }

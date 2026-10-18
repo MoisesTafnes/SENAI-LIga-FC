@@ -52,17 +52,32 @@ export class PlayersService {
   }
 
   async create(dto: CreatePlayerDto) {
-    const maxAttr = Math.max(
-      dto.pace,
-      dto.shooting,
-      dto.passing,
-      dto.dribbling,
-      dto.defending,
-      dto.physical,
-    );
+    // 1. Validação de pelo menos duas palavras no nome
+    const nameWords = dto.name.trim().split(/\s+/);
+    if (nameWords.length < 2) {
+      throw new BadRequestException('O nome do jogador deve conter pelo menos duas palavras.');
+    }
 
+    // 2. Validação da soma dos seis atributos (máximo 480)
+    const sumAttr = dto.pace + dto.shooting + dto.passing + dto.dribbling + dto.defending + dto.physical;
+    if (sumAttr > 480) {
+      throw new BadRequestException('A soma dos seis atributos do jogador não pode ultrapassar 480.');
+    }
+
+    // 3. Validação do limite de agilidade para >= 35 anos (máximo 85)
+    if (dto.age >= 35 && dto.agility > 85) {
+      throw new BadRequestException('Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.');
+    }
+
+    // 4. Validação de potencial em relação ao maior atributo
+    const maxAttr = Math.max(dto.pace, dto.shooting, dto.passing, dto.dribbling, dto.defending, dto.physical);
     if (dto.potential < maxAttr) {
       throw new BadRequestException('O potencial não pode ser menor do que o maior dos seis atributos.');
+    }
+
+    // 5. Validação de potencial para >= 33 anos (deve ser exatamente igual ao maior atributo)
+    if (dto.age >= 33 && dto.potential !== maxAttr) {
+      throw new BadRequestException('No cadastro de jogador com 33 anos ou mais, o potencial deve ser igual ao maior dos seis atributos.');
     }
 
     const overall = PlayerCalculatorDomain.calculateOverall(dto.position, dto);
@@ -87,6 +102,45 @@ export class PlayersService {
     });
 
     return this.mapToResponse(created);
+  }
+
+  async update(id: number, dto: UpdatePlayerDto) {
+    const player = await this.prisma.jogador.findFirst({
+      where: { id, excluidoEm: null },
+    });
+
+    if (!player) {
+      throw new NotFoundException('Jogador não encontrado.');
+    }
+
+    const nameWords = dto.name.trim().split(/\s+/);
+    if (nameWords.length < 2) {
+      throw new BadRequestException('O nome do jogador deve conter pelo menos duas palavras.');
+    }
+
+    if (dto.age >= 35 && dto.agility > 85) {
+      throw new BadRequestException('Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.');
+    }
+
+    if (player.clubeId !== null && player.posicao !== dto.position) {
+      throw new ConflictException('Jogador vinculado a um clube não pode mudar de posição.');
+    }
+
+    if (dto.age < player.idade) {
+      throw new ConflictException('A idade do jogador não pode ser reduzida.');
+    }
+
+    const updated = await this.prisma.jogador.update({
+      where: { id },
+      data: {
+        nome: dto.name,
+        posicao: dto.position,
+        agilidade: dto.agility,
+        idade: dto.age,
+      },
+    });
+
+    return this.mapToResponse(updated);
   }
 
   async findOne(id: number) {
@@ -117,36 +171,6 @@ export class PlayersService {
     const updated = await this.prisma.jogador.update({
       where: { id },
       data: { condicao: dto.condition },
-    });
-
-    return this.mapToResponse(updated);
-  }
-
-  async update(id: number, dto: UpdatePlayerDto) {
-    const player = await this.prisma.jogador.findFirst({
-      where: { id, excluidoEm: null },
-    });
-
-    if (!player) {
-      throw new NotFoundException('Jogador não encontrado.');
-    }
-
-    if (player.clubeId !== null && player.posicao !== dto.position) {
-      throw new ConflictException('Jogador vinculado a um clube não pode mudar de posição.');
-    }
-
-    if (dto.age < player.idade) {
-      throw new ConflictException('A idade do jogador não pode ser reduzida.');
-    }
-
-    const updated = await this.prisma.jogador.update({
-      where: { id },
-      data: {
-        nome: dto.name,
-        posicao: dto.position,
-        agilidade: dto.agility,
-        idade: dto.age,
-      },
     });
 
     return this.mapToResponse(updated);

@@ -1,30 +1,37 @@
-import { IsOptional, IsString, IsEnum, IsBoolean, IsInt, Min, Max, IsNumber } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { PlayerPosition, PlayerCondition } from '../domain/player-calculator.domain';
+import { IsOptional, IsString, IsInt, IsIn, IsBoolean, Min, Max } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import type { PlayerPosition, PlayerCondition } from '../domain/player-calculator.domain';
 
 export class QueryPlayersDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @IsOptional()
   @IsString()
   search?: string;
 
   @IsOptional()
-  @IsEnum(['GOL', 'ZAG', 'LAT', 'MEI', 'ATA'])
+  @IsString()
+  @IsIn(['GOL', 'ZAG', 'LAT', 'MEI', 'ATA'])
   position?: PlayerPosition;
 
   @IsOptional()
-  @IsEnum(['APTO', 'MAL_CONDICIONADO', 'DOENTE'])
+  @IsString()
+  @IsIn(['APTO', 'MAL_CONDICIONADO', 'DOENTE'])
   condition?: PlayerCondition;
-
-  @IsOptional()
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
-  free?: boolean;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
-  club_id?: number;
+  @Min(0)
+  min_value?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  max_value?: number;
 
   @IsOptional()
   @Type(() => Number)
@@ -42,19 +49,17 @@ export class QueryPlayersDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  min_value?: number;
+  @IsInt()
+  club_id?: number;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  max_value?: number;
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  free?: boolean;
 
   @IsOptional()
   @IsString()
-  sort?: string = 'name';
+  sort?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -66,6 +71,6 @@ export class QueryPlayersDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(100)
   limit?: number = 10;
 }

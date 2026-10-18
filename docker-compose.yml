@@ -1,19 +1,38 @@
-version: '3.8'
-
 services:
-  database:
+  postgres:
     image: postgres:16-alpine
-    container_name: liga_senai_fc_postgres
+    container_name: senai_fc_db
     restart: always
     environment:
-      POSTGRES_DB: senai_fc
       POSTGRES_USER: administrator_senai
       POSTGRES_PASSWORD: DBTAFNES
+      POSTGRES_DB: senai_fc
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U administrator_senai -d senai_fc"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: senai_fc_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "postgresql://administrator_senai:DBTAFNES@postgres:5432/senai_fc?schema=public"
+      CORS_ORIGIN: "http://localhost:5173"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
-  pgdata:
-
+  postgres_data:
