@@ -26,7 +26,7 @@ export class PlayersController {
   @Post()
   async create(@Body() dto: CreatePlayerDto, @Response({ passthrough: true }) res: any) {
     const player = await this.playersService.create(dto);
-    res.setHeader('Location', `/api/v1/players/${player.id}`);
+    res.setHeader('Location', `/players/${player.id}`);
     return player;
   }
 
