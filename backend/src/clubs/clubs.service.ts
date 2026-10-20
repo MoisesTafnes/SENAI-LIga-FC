@@ -1,8 +1,18 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../database';
 import { CreateClubDto } from './dto/create-club.dto';
 import { QueryClubsDto } from './dto/query-clubs.dto';
-import { PlayerCalculatorDomain, PlayerPosition, PlayerCondition } from '../players/domain/player-calculator.domain';
+import { SetLineupDto, LineupFormation } from './dto/set-lineup.dto';
+import {
+  PlayerCalculatorDomain,
+  PlayerPosition,
+  PlayerCondition,
+} from '../players/domain/player-calculator.domain';
 
 @Injectable()
 export class ClubsService {
@@ -10,16 +20,19 @@ export class ClubsService {
 
   /**
    * Valida as regras estritas da sigla (RN10):
-   * 1. As 3 letras não podem ser todas iguais (ex: "AAA" é recusado).
-   * 2. A primeira letra da sigla DEVE ser a primeira letra do nome do clube.
-   * 3. As 3 letras devem aparecer no nome nessa ordem (insensível a acentos/caixa).
+   * As 3 letras não podem ser todas iguais (ex: "AAA" é recusado).
+   * A primeira letra da sigla DEVE ser a primeira letra do nome do clube.
+   * As 3 letras devem aparecer no nome nessa ordem (insensível a acentos/caixa).
    */
   private validateAcronym(name: string, acronym: string): boolean {
     if (acronym[0] === acronym[1] && acronym[1] === acronym[2]) {
       return false;
     }
 
-    const normalizedName = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    const normalizedName = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
     const cleanAcronym = acronym.toUpperCase();
 
     const firstLetterOfName = normalizedName.replace(/[^A-Z]/g, '')[0];
@@ -56,10 +69,10 @@ export class ClubsService {
       throw new BadRequestException('A sigla informada é inválida para o nome do clube.');
     }
 
-    // 4. Unicidade de nome (insensível a caixa alta/baixa, mas sensível a acentos: "Águias FC" vs "Aguias FC")
+    // 4. Unicidade de nome (insensível a caixa alta/baixa, mas sensível a acentos)
     const allClubs = await this.prisma.clube.findMany({ select: { nome: true, sigla: true } });
     const targetNameLower = dto.name.toLowerCase();
-    
+
     const existingName = allClubs.some((c) => c.nome.toLowerCase() === targetNameLower);
     if (existingName) {
       throw new ConflictException('Já existe um clube cadastrado com esse nome.');
@@ -142,7 +155,7 @@ export class ClubsService {
     return mappedClubs;
   }
 
-async findOne(id: number) {
+  async findOne(id: number) {
     const club = await this.prisma.clube.findUnique({
       where: { id },
       include: {
@@ -150,7 +163,7 @@ async findOne(id: number) {
           where: { excluidoEm: null },
           include: {
             contratos: {
-              where: { situacao: 'ATIVO' }, // Corrigido de status para situacao
+              where: { situacao: 'ATIVO' },
               take: 1,
             },
           },
@@ -184,8 +197,8 @@ async findOne(id: number) {
         player.idade,
       );
 
-      // Pega o primeiro contrato ativo da lista tratada pelo Prisma
-      const activeContract = player.contratos && player.contratos.length > 0 ? player.contratos[0] : null;
+      const activeContract =
+        player.contratos && player.contratos.length > 0 ? player.contratos[0] : null;
       let contractInfo = null;
 
       if (activeContract) {
@@ -251,6 +264,205 @@ async findOne(id: number) {
       squad_value: roundedSquadValue,
       net_worth: netWorth,
       players: mappedPlayers,
+    };
+  }
+
+  // =========================================================================
+  // MÓDULO DE ESCALAÇÃO DE TITULARES (RN19 - PASSO B)
+  // =========================================================================
+
+  /**
+   * Helper privado para validar se as posições dos 5 jogadores casam com a formação (RN19)
+   */
+  private validateFormationRequirements(formation: LineupFormation, positions: string[]) {
+    const goalkeepers = positions.filter((p) => p === 'GOL').length;
+    const defense = positions.filter((p) => p === 'ZAG' || p === 'LAT').length;
+    const midfield = positions.filter((p) => p === 'MEI').length;
+    const attack = positions.filter((p) => p === 'ATA').length;
+
+    if (goalkeepers !== 1) {
+      throw new ConflictException('A escalação deve conter exatamente 1 Goleiro (GOL).');
+    }
+
+    const rules = {
+      [LineupFormation.F_3_1]: { defense: 3, midfield: 0, attack: 1 },
+      [LineupFormation.F_2_2]: { defense: 2, midfield: 0, attack: 2 },
+      [LineupFormation.F_2_1_1]: { defense: 2, midfield: 1, attack: 1 },
+      [LineupFormation.F_1_2_1]: { defense: 1, midfield: 2, attack: 1 },
+    };
+
+    const target = rules[formation];
+    if (
+      defense !== target.defense ||
+      midfield !== target.midfield ||
+      attack !== target.attack
+    ) {
+      throw new ConflictException(
+        `As posições dos jogadores selecionados não fecham a formação ${formation}. Esperado: ${target.defense} Defensores (ZAG/LAT), ${target.midfield} Meias (MEI) e ${target.attack} Atacantes (ATA).`,
+      );
+    }
+  }
+
+ /**
+   * RN19 - Definir Escalação (PUT /clubs/:id/lineup)
+   */
+  async updateLineup(clubId: number, dto: SetLineupDto) {
+    const { formation, player_ids } = dto;
+
+    // 1. Validar existência do clube
+    const club = await this.prisma.clube.findUnique({
+      where: { id: clubId },
+    });
+    if (!club) {
+      throw new NotFoundException('Clube não encontrado.');
+    }
+
+    // 2. Buscar os 5 jogadores solicitados
+    const players = await this.prisma.jogador.findMany({
+      where: {
+        id: { in: player_ids },
+        excluidoEm: null,
+      },
+    });
+
+    if (players.length < 5) {
+      throw new NotFoundException('Um ou mais jogadores informados não foram encontrados.');
+    }
+
+    // 3. Validar pertencimento ao clube e condição de saúde
+    for (const player of players) {
+      if (player.clubeId !== clubId) {
+        throw new ConflictException(
+          `O jogador ${player.nome} (ID: ${player.id}) não pertence a este clube.`,
+        );
+      }
+      if (player.condicao === 'DOENTE') {
+        throw new ConflictException(
+          `O jogador ${player.nome} (ID: ${player.id}) está DOENTE e não pode ser escalado.`,
+        );
+      }
+    }
+
+    // 4. Validar se a distribuição tática atende a formação
+    const positions = players.map((p) => p.posicao);
+    this.validateFormationRequirements(formation, positions);
+
+    // 5. Persistir escalação em transação atômica
+    return this.prisma.$transaction(async (tx) => {
+      // Atualizar a formação no clube
+      await tx.clube.update({
+        where: { id: clubId },
+        data: { formacao: formation },
+      });
+
+      // Limpar escalação anterior do clube
+      await tx.escalacao.deleteMany({
+        where: { clubeId: clubId },
+      });
+
+      // Inserir os 5 novos titulares
+      await tx.escalacao.createMany({
+        data: player_ids.map((id) => ({
+          clubeId: clubId,
+          jogadorId: id,
+        })),
+      });
+
+      return this.getLineup(clubId);
+    });
+  }
+
+  /**
+   * RN19 - Consultar Escalação (GET /clubs/:id/lineup)
+   */
+  async getLineup(clubId: number) {
+    const club = await this.prisma.clube.findUnique({
+      where: { id: clubId },
+      include: {
+        escalacoes: {
+          include: {
+            jogador: true,
+          },
+        },
+      },
+    });
+
+    if (!club) {
+      throw new NotFoundException('Clube não encontrado.');
+    }
+
+    if (!club.formacao || club.escalacoes.length === 0) {
+      return {
+        club_id: clubId,
+        formation: null,
+        complete: false,
+        players: [],
+      };
+    }
+
+    // Filtrar titulares ativos (que pertencem ao clube e não estão excluídos nem DOENTES)
+    const activeLineupPlayers = club.escalacoes
+      .map((e) => e.jogador)
+      .filter(
+        (p) => p && p.excluidoEm === null && p.clubeId === clubId && p.condicao !== 'DOENTE',
+      );
+
+    const isComplete = activeLineupPlayers.length === 5;
+
+    // Ordenar titulares por ordem tática (GOL, ZAG, LAT, MEI, ATA), nome e ID (RN11)
+    const positionOrder: Record<string, number> = { GOL: 1, ZAG: 2, LAT: 3, MEI: 4, ATA: 5 };
+
+    const formattedPlayers = activeLineupPlayers
+      .sort((a, b) => {
+        const pA = positionOrder[a.posicao] || 99;
+        const pB = positionOrder[b.posicao] || 99;
+        if (pA !== pB) return pA - pB;
+        const nameDiff = a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+        if (nameDiff !== 0) return nameDiff;
+        return a.id - b.id;
+      })
+      .map((p) => {
+        const marketValue = PlayerCalculatorDomain.calculateMarketValue(
+          Number(p.valorBase),
+          p.condicao as PlayerCondition,
+          p.agilidade,
+          p.idade,
+        );
+        const overall = PlayerCalculatorDomain.calculateOverall(p.posicao as PlayerPosition, {
+          pace: p.velocidade,
+          shooting: p.finalizacao,
+          passing: p.passe,
+          dribbling: p.drible,
+          defending: p.defesa,
+          physical: p.fisico,
+        });
+
+        return {
+          id: p.id,
+          name: p.nome,
+          position: p.posicao,
+          agility: p.agilidade,
+          age: p.idade,
+          condition: p.condicao,
+          base_value: Number(p.valorBase),
+          market_value: marketValue,
+          pace: p.velocidade,
+          shooting: p.finalizacao,
+          passing: p.passe,
+          dribbling: p.drible,
+          defending: p.defesa,
+          physical: p.fisico,
+          potential: p.potencial,
+          overall,
+          club_id: p.clubeId,
+        };
+      });
+
+    return {
+      club_id: clubId,
+      formation: club.formacao,
+      complete: isComplete,
+      players: formattedPlayers,
     };
   }
 }

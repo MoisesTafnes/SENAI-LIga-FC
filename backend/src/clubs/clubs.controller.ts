@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Body, Param, Query, ParseIntPipe, Response } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+  Response,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ClubsService } from './clubs.service';
 import { CreateClubDto } from './dto/create-club.dto';
 import { QueryClubsDto } from './dto/query-clubs.dto';
+import { SetLineupDto } from './dto/set-lineup.dto';
 
 @Controller('clubs')
 export class ClubsController {
@@ -22,5 +35,19 @@ export class ClubsController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.clubsService.findOne(id);
+  }
+
+  @Put(':id/lineup')
+  @HttpCode(HttpStatus.OK)
+  updateLineup(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetLineupDto,
+  ) {
+    return this.clubsService.updateLineup(id, dto);
+  }
+
+  @Get(':id/lineup')
+  getLineup(@Param('id', ParseIntPipe) id: number) {
+    return this.clubsService.getLineup(id);
   }
 }
