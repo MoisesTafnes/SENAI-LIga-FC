@@ -21,9 +21,18 @@ export class SetLineupDto {
   formation: LineupFormation;
 
   @IsArray({ message: 'player_ids deve ser uma lista de IDs.' })
-  @ArrayMinSize(5, { message: 'A escalação deve conter exatamente 5 jogadores.' })
-  @ArrayMaxSize(5, { message: 'A escalação deve conter exatamente 5 jogadores.' })
-  @ArrayUnique({ message: 'Os IDs dos jogadores escalados não podem ser repetidos.' })
-  @IsInt({ each: true, message: 'Cada elemento de player_ids deve ser um número inteiro.' })
+  @ArrayMinSize(5, {
+    message: 'A escalação deve conter exatamente 5 jogadores.',
+  })
+  @ArrayMaxSize(5, {
+    message: 'A escalação deve conter exatamente 5 jogadores.',
+  })
+  @ArrayUnique({
+    message: 'Os IDs dos jogadores escalados não podem ser repetidos.',
+  })
+  @IsInt({
+    each: true,
+    message: 'Cada elemento de player_ids deve ser um número inteiro.',
+  })
   player_ids: number[];
 }

@@ -1,4 +1,4 @@
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from "lucide-react";
 
 export function Market() {
   return (
@@ -8,12 +8,19 @@ export function Market() {
           <ShoppingCart className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">Mercado & Transferências</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Compre jogadores livres com fidelidade ou venda atletas com comissão/multa.</p>
+          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">
+            Mercado & Transferências
+          </h1>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Compre jogadores livres com fidelidade ou venda atletas com
+            comissão/multa.
+          </p>
         </div>
       </div>
       <div className="bg-white border border-zinc-200 rounded-2xl p-8 text-center text-zinc-500 text-xs">
-        Selecione um jogador livre na página de <strong className="text-zinc-800">Jogadores</strong> para iniciar uma negociação.
+        Selecione um jogador livre na página de{" "}
+        <strong className="text-zinc-800">Jogadores</strong> para iniciar uma
+        negociação.
       </div>
     </div>
   );

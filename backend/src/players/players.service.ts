@@ -1,10 +1,19 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../database';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import { UpdateConditionDto } from './dto/update-condition.dto';
 import { QueryPlayersDto } from './dto/query-players.dto';
-import { PlayerCalculatorDomain, PlayerPosition, PlayerCondition } from './domain/player-calculator.domain';
+import {
+  PlayerCalculatorDomain,
+  PlayerPosition,
+  PlayerCondition,
+} from './domain/player-calculator.domain';
 
 @Injectable()
 export class PlayersService {
@@ -55,33 +64,60 @@ export class PlayersService {
     // 1. Validação de pelo menos duas palavras no nome
     const nameWords = dto.name.trim().split(/\s+/);
     if (nameWords.length < 2) {
-      throw new BadRequestException('O nome do jogador deve conter pelo menos duas palavras.');
+      throw new BadRequestException(
+        'O nome do jogador deve conter pelo menos duas palavras.',
+      );
     }
 
     // 2. Validação da soma dos seis atributos (máximo 480)
-    const sumAttr = dto.pace + dto.shooting + dto.passing + dto.dribbling + dto.defending + dto.physical;
+    const sumAttr =
+      dto.pace +
+      dto.shooting +
+      dto.passing +
+      dto.dribbling +
+      dto.defending +
+      dto.physical;
     if (sumAttr > 480) {
-      throw new BadRequestException('A soma dos seis atributos do jogador não pode ultrapassar 480.');
+      throw new BadRequestException(
+        'A soma dos seis atributos do jogador não pode ultrapassar 480.',
+      );
     }
 
     // 3. Validação do limite de agilidade para >= 35 anos (máximo 85)
     if (dto.age >= 35 && dto.agility > 85) {
-      throw new BadRequestException('Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.');
+      throw new BadRequestException(
+        'Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.',
+      );
     }
 
     // 4. Validação de potencial em relação ao maior atributo
-    const maxAttr = Math.max(dto.pace, dto.shooting, dto.passing, dto.dribbling, dto.defending, dto.physical);
+    const maxAttr = Math.max(
+      dto.pace,
+      dto.shooting,
+      dto.passing,
+      dto.dribbling,
+      dto.defending,
+      dto.physical,
+    );
     if (dto.potential < maxAttr) {
-      throw new BadRequestException('O potencial não pode ser menor do que o maior dos seis atributos.');
+      throw new BadRequestException(
+        'O potencial não pode ser menor do que o maior dos seis atributos.',
+      );
     }
 
     // 5. Validação de potencial para >= 33 anos (deve ser exatamente igual ao maior atributo)
     if (dto.age >= 33 && dto.potential !== maxAttr) {
-      throw new BadRequestException('No cadastro de jogador com 33 anos ou mais, o potencial deve ser igual ao maior dos seis atributos.');
+      throw new BadRequestException(
+        'No cadastro de jogador com 33 anos ou mais, o potencial deve ser igual ao maior dos seis atributos.',
+      );
     }
 
     const overall = PlayerCalculatorDomain.calculateOverall(dto.position, dto);
-    const baseValue = PlayerCalculatorDomain.calculateBaseValue(overall, dto.potential, dto.age);
+    const baseValue = PlayerCalculatorDomain.calculateBaseValue(
+      overall,
+      dto.potential,
+      dto.age,
+    );
 
     const created = await this.prisma.jogador.create({
       data: {
@@ -115,15 +151,21 @@ export class PlayersService {
 
     const nameWords = dto.name.trim().split(/\s+/);
     if (nameWords.length < 2) {
-      throw new BadRequestException('O nome do jogador deve conter pelo menos duas palavras.');
+      throw new BadRequestException(
+        'O nome do jogador deve conter pelo menos duas palavras.',
+      );
     }
 
     if (dto.age >= 35 && dto.agility > 85) {
-      throw new BadRequestException('Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.');
+      throw new BadRequestException(
+        'Jogadores com 35 anos ou mais podem ter agilidade de no máximo 85.',
+      );
     }
 
     if (player.clubeId !== null && player.posicao !== dto.position) {
-      throw new ConflictException('Jogador vinculado a um clube não pode mudar de posição.');
+      throw new ConflictException(
+        'Jogador vinculado a um clube não pode mudar de posição.',
+      );
     }
 
     if (dto.age < player.idade) {
@@ -165,12 +207,22 @@ export class PlayersService {
     }
 
     if (player.condicao === 'DOENTE' && dto.condition === 'APTO') {
-      throw new ConflictException('Transição direta de DOENTE para APTO não é permitida.');
+      throw new ConflictException(
+        'Transição direta de DOENTE para APTO não é permitida.',
+      );
     }
 
-    const updated = await this.prisma.jogador.update({
-      where: { id },
-      data: { condicao: dto.condition },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const playerUpdate = await tx.jogador.update({
+        where: { id },
+        data: { condicao: dto.condition },
+      });
+
+      if (dto.condition === 'DOENTE') {
+        await tx.escalacao.deleteMany({ where: { jogadorId: id } });
+      }
+
+      return playerUpdate;
     });
 
     return this.mapToResponse(updated);
@@ -186,7 +238,9 @@ export class PlayersService {
     }
 
     if (player.clubeId !== null) {
-      throw new ConflictException('Não é possível excluir um jogador vinculado a um clube.');
+      throw new ConflictException(
+        'Não é possível excluir um jogador vinculado a um clube.',
+      );
     }
 
     await this.prisma.jogador.update({
@@ -204,7 +258,8 @@ export class PlayersService {
 
     if (query.position) where.posicao = query.position;
     if (query.condition) where.condicao = query.condition;
-    if (query.free !== undefined) where.clubeId = query.free ? null : { not: null };
+    if (query.free !== undefined)
+      where.clubeId = query.free ? null : { not: null };
     if (query.club_id) where.clubeId = query.club_id;
 
     if (query.min_age || query.max_age) {
@@ -223,7 +278,13 @@ export class PlayersService {
       mapped = mapped.filter((p) => p.market_value <= query.max_value!);
     }
 
-    const positionOrder: Record<string, number> = { GOL: 1, ZAG: 2, LAT: 3, MEI: 4, ATA: 5 };
+    const positionOrder: Record<string, number> = {
+      GOL: 1,
+      ZAG: 2,
+      LAT: 3,
+      MEI: 4,
+      ATA: 5,
+    };
 
     mapped.sort((a, b) => {
       if (query.sort === 'position') {
@@ -243,7 +304,9 @@ export class PlayersService {
         if (diff !== 0) return diff;
       }
 
-      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', {
+        sensitivity: 'base',
+      });
       if (nameDiff !== 0) return nameDiff;
 
       return a.id - b.id;

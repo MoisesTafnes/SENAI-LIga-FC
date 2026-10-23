@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from "react";
 import {
   Download,
   ShoppingCart,
@@ -9,15 +9,15 @@ import {
   X,
   Check,
   ChevronDown,
-} from 'lucide-react';
-import { api } from '../../../services/api';
+} from "lucide-react";
+import { clubsService } from "../services/clubs.service";
 
 interface TransactionItem {
   id: number;
   club_id: number;
   player_id: number;
   player_name: string;
-  type: 'COMPRA' | 'VENDA';
+  type: "COMPRA" | "VENDA";
   value: number;
   fee: number;
   penalty: number;
@@ -42,34 +42,37 @@ interface ClubHistoryTabProps {
 
 function formatDateTime(isoStr: string): string {
   const d = new Date(isoStr);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
   return `${day}/${month}/${year} ${h}:${m}`;
 }
 
 function formatCurrency(val: number): string {
-  return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return val.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function getPlayerInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
+  if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 const colorMap = [
-  'bg-emerald-100 text-emerald-800',
-  'bg-blue-100 text-blue-800',
-  'bg-purple-100 text-purple-800',
-  'bg-pink-100 text-pink-800',
-  'bg-amber-100 text-amber-800',
-  'bg-cyan-100 text-cyan-800',
-  'bg-indigo-100 text-indigo-800',
-  'bg-rose-100 text-rose-800',
+  "bg-emerald-100 text-emerald-800",
+  "bg-blue-100 text-blue-800",
+  "bg-purple-100 text-purple-800",
+  "bg-pink-100 text-pink-800",
+  "bg-amber-100 text-amber-800",
+  "bg-cyan-100 text-cyan-800",
+  "bg-indigo-100 text-indigo-800",
+  "bg-rose-100 text-rose-800",
 ];
 
 function getAvatarColor(name: string): string {
@@ -95,24 +98,34 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
   // Filters
   const [filterBuy, setFilterBuy] = useState(true);
   const [filterSell, setFilterSell] = useState(true);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<number | 'all'>('all');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | "all">(
+    "all",
+  );
   const [playerDropdownOpen, setPlayerDropdownOpen] = useState(false);
 
   // Toast for CSV
-  const [csvToast, setCsvToast] = useState<{ show: boolean; fileName: string; filterText: string } | null>(null);
+  const [csvToast, setCsvToast] = useState<{
+    show: boolean;
+    fileName: string;
+    filterText: string;
+  } | null>(null);
 
   // Distinct players across all transactions for dropdown
-  const [allPlayersList, setAllPlayersList] = useState<{ id: number; name: string }[]>([]);
+  const [allPlayersList, setAllPlayersList] = useState<
+    { id: number; name: string }[]
+  >([]);
 
   // Load distinct players initially
   useEffect(() => {
     async function loadDistinctPlayers() {
       try {
-        const res = await api.get(`/clubs/${clubId}/transactions`);
-        const list: TransactionItem[] = res.data?.data || [];
+        const result = await clubsService.getTransactions(clubId);
+        const list: TransactionItem[] = result?.data || [];
         const map = new Map<number, string>();
         list.forEach((t) => map.set(t.player_id, t.player_name));
-        setAllPlayersList(Array.from(map.entries()).map(([id, name]) => ({ id, name })));
+        setAllPlayersList(
+          Array.from(map.entries()).map(([id, name]) => ({ id, name })),
+        );
       } catch {
         // silent
       }
@@ -144,28 +157,33 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
       setFilterRefused(null);
 
       const params: any = {};
-      if (filterBuy && !filterSell) params.type = 'COMPRA';
-      if (!filterBuy && filterSell) params.type = 'VENDA';
-      if (selectedPlayerId !== 'all') params.player_id = selectedPlayerId;
+      if (filterBuy && !filterSell) params.type = "COMPRA";
+      if (!filterBuy && filterSell) params.type = "VENDA";
+      if (selectedPlayerId !== "all") params.player_id = selectedPlayerId;
 
-      const res = await api.get(`/clubs/${clubId}/transactions`, { params });
-      setTransactions(res.data?.data || []);
+      const result = await clubsService.getTransactions(clubId, params);
+      setTransactions(result?.data || []);
       setSummary(
-        res.data?.summary || {
+        result?.summary || {
           total_spent: 0,
           total_received: 0,
           total_fees: 0,
           total_penalties: 0,
           total_profit: 0,
-        }
+        },
       );
     } catch (err: any) {
-      if (err.response?.status === 404 && selectedPlayerId !== 'all') {
+      if (err.response?.status === 404 && selectedPlayerId !== "all") {
         // H05 - Filtro recusado
-        setFilterRefused(err.response?.data?.message || 'Jogador não encontrado.');
+        setFilterRefused(
+          err.response?.data?.message || "Jogador não encontrado.",
+        );
       } else {
         // E05 - Histórico com erro
-        setError(err.response?.data?.message || 'Não foi possível carregar o histórico. Os totais e a exportação ficam indisponíveis até a lista carregar.');
+        setError(
+          err.response?.data?.message ||
+            "Não foi possível carregar o histórico. Os totais e a exportação ficam indisponíveis até a lista carregar.",
+        );
       }
     } finally {
       setLoading(false);
@@ -180,32 +198,31 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
   const handleExportCsv = async () => {
     try {
       const params: any = {};
-      if (filterBuy && !filterSell) params.type = 'COMPRA';
-      if (!filterBuy && filterSell) params.type = 'VENDA';
-      if (selectedPlayerId !== 'all') params.player_id = selectedPlayerId;
+      if (filterBuy && !filterSell) params.type = "COMPRA";
+      if (!filterBuy && filterSell) params.type = "VENDA";
+      if (selectedPlayerId !== "all") params.player_id = selectedPlayerId;
 
-      const res = await api.get(`/clubs/${clubId}/transactions/export`, {
-        params,
-        responseType: 'text',
-      });
+      const csv = await clubsService.exportTransactionsCsv(clubId, params);
 
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       const fileName = `historico-clube-${clubId}.csv`;
-      link.setAttribute('download', fileName);
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      let filterDesc = 'com todos os filtros aplicados.';
-      if (filterBuy && !filterSell) filterDesc = 'com o filtro de tipo Compra aplicado.';
-      else if (!filterBuy && filterSell) filterDesc = 'com o filtro de tipo Venda aplicado.';
-      else if (selectedPlayerId !== 'all') {
+      let filterDesc = "com todos os filtros aplicados.";
+      if (filterBuy && !filterSell)
+        filterDesc = "com o filtro de tipo Compra aplicado.";
+      else if (!filterBuy && filterSell)
+        filterDesc = "com o filtro de tipo Venda aplicado.";
+      else if (selectedPlayerId !== "all") {
         const p = allPlayersList.find((pl) => pl.id === selectedPlayerId);
-        filterDesc = `filtrado pelo jogador ${p?.name || ''}.`;
+        filterDesc = `filtrado pelo jogador ${p?.name || ""}.`;
       }
 
       setCsvToast({
@@ -216,22 +233,24 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
 
       setTimeout(() => setCsvToast(null), 5000);
     } catch (err: any) {
-      alert('Erro ao exportar CSV: ' + (err.response?.data?.message || err.message));
+      alert(
+        "Erro ao exportar CSV: " + (err.response?.data?.message || err.message),
+      );
     }
   };
 
-  const isFiltered = !filterBuy || !filterSell || selectedPlayerId !== 'all';
+  const isFiltered = !filterBuy || !filterSell || selectedPlayerId !== "all";
 
   const resetFilters = () => {
     setFilterBuy(true);
     setFilterSell(true);
-    setSelectedPlayerId('all');
+    setSelectedPlayerId("all");
   };
 
   const selectedPlayerName = useMemo(() => {
-    if (selectedPlayerId === 'all') return 'todos';
+    if (selectedPlayerId === "all") return "todos";
     const found = allPlayersList.find((p) => p.id === selectedPlayerId);
-    return found ? found.name : 'todos';
+    return found ? found.name : "todos";
   }, [selectedPlayerId, allPlayersList]);
 
   return (
@@ -260,9 +279,12 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
       {/* Header com Título e Botão Exportar CSV */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-zinc-900">Histórico de transações</h2>
+          <h2 className="text-sm font-bold text-zinc-900">
+            Histórico de transações
+          </h2>
           <p className="text-[11px] text-zinc-400 mt-0.5">
-            Da mais recente para a mais antiga, com o nome e os valores do momento de cada operação.
+            Da mais recente para a mais antiga, com o nome e os valores do
+            momento de cada operação.
           </p>
         </div>
         <button
@@ -312,11 +334,13 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
             <div className="absolute left-0 mt-1 w-56 max-h-60 overflow-y-auto bg-white border border-zinc-200 rounded-xl shadow-xl z-50 py-1 divide-y divide-zinc-50 text-xs">
               <button
                 onClick={() => {
-                  setSelectedPlayerId('all');
+                  setSelectedPlayerId("all");
                   setPlayerDropdownOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 hover:bg-zinc-50 transition-colors ${
-                  selectedPlayerId === 'all' ? 'font-bold text-[#155DFC] bg-blue-50/50' : 'text-zinc-700'
+                  selectedPlayerId === "all"
+                    ? "font-bold text-[#155DFC] bg-blue-50/50"
+                    : "text-zinc-700"
                 }`}
               >
                 Todos os jogadores
@@ -329,7 +353,9 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
                     setPlayerDropdownOpen(false);
                   }}
                   className={`w-full text-left px-3 py-2 hover:bg-zinc-50 transition-colors truncate ${
-                    selectedPlayerId === p.id ? 'font-bold text-[#155DFC] bg-blue-50/50' : 'text-zinc-700'
+                    selectedPlayerId === p.id
+                      ? "font-bold text-[#155DFC] bg-blue-50/50"
+                      : "text-zinc-700"
                   }`}
                 >
                   {p.name}
@@ -356,7 +382,9 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
           <div className="flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-bold text-red-900">O filtro foi recusado</div>
+              <div className="font-bold text-red-900">
+                O filtro foi recusado
+              </div>
               <div className="text-red-700 mt-0.5">{filterRefused}</div>
             </div>
           </div>
@@ -375,7 +403,9 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
           <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center mx-auto mb-3 text-zinc-400">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-bold text-zinc-900 mb-1">Não foi possível carregar o histórico</h3>
+          <h3 className="text-sm font-bold text-zinc-900 mb-1">
+            Não foi possível carregar o histórico
+          </h3>
           <p className="text-xs text-zinc-500 max-w-md mx-auto mb-5 leading-relaxed">
             {error}
           </p>
@@ -396,7 +426,10 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
           </div>
           <div className="p-4 space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center justify-between animate-pulse">
+              <div
+                key={i}
+                className="flex items-center justify-between animate-pulse"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-zinc-100" />
                   <div className="w-32 h-3.5 bg-zinc-100 rounded" />
@@ -415,9 +448,12 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
             <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center mx-auto mb-3 text-zinc-400">
               <History className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-zinc-900 mb-1">Nenhuma transação ainda</h3>
+            <h3 className="text-sm font-bold text-zinc-900 mb-1">
+              Nenhuma transação ainda
+            </h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed">
-              As compras e vendas do clube aparecem aqui, com os totais logo abaixo.
+              As compras e vendas do clube aparecem aqui, com os totais logo
+              abaixo.
             </p>
           </div>
 
@@ -425,7 +461,8 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
           <SummaryCards summary={summary} />
 
           <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Sem transações, os totais ficam zerados. O botão Exportar CSV continua disponível e baixa só a linha de cabeçalho.
+            Sem transações, os totais ficam zerados. O botão Exportar CSV
+            continua disponível e baixa só a linha de cabeçalho.
           </p>
         </div>
       ) : (
@@ -439,21 +476,34 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
                     <th className="py-2.5 px-3 font-medium">Data e hora</th>
                     <th className="py-2.5 px-3 font-medium">Tipo</th>
                     <th className="py-2.5 px-3 font-medium">Jogador</th>
-                    <th className="py-2.5 px-3 text-right font-medium">Valor</th>
-                    <th className="py-2.5 px-3 text-right font-medium">Taxa ou comissão</th>
-                    <th className="py-2.5 px-3 text-right font-medium">Multa</th>
-                    <th className="py-2.5 px-3 text-right font-medium">Lucro</th>
-                    <th className="py-2.5 px-3 text-right font-medium">Variação do caixa</th>
+                    <th className="py-2.5 px-3 text-right font-medium">
+                      Valor
+                    </th>
+                    <th className="py-2.5 px-3 text-right font-medium">
+                      Taxa ou comissão
+                    </th>
+                    <th className="py-2.5 px-3 text-right font-medium">
+                      Multa
+                    </th>
+                    <th className="py-2.5 px-3 text-right font-medium">
+                      Lucro
+                    </th>
+                    <th className="py-2.5 px-3 text-right font-medium">
+                      Variação do caixa
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-zinc-700">
                   {transactions.map((t) => {
-                    const isBuy = t.type === 'COMPRA';
+                    const isBuy = t.type === "COMPRA";
                     const initials = getPlayerInitials(t.player_name);
                     const colorClass = getAvatarColor(t.player_name);
 
                     return (
-                      <tr key={t.id} className="hover:bg-zinc-50/70 transition-colors">
+                      <tr
+                        key={t.id}
+                        className="hover:bg-zinc-50/70 transition-colors"
+                      >
                         <td className="py-3 px-3 text-zinc-500 font-mono text-[11px] whitespace-nowrap">
                           {formatDateTime(t.created_at)}
                         </td>
@@ -477,7 +527,9 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
                             >
                               {initials}
                             </span>
-                            <span className="font-semibold text-zinc-900">{t.player_name}</span>
+                            <span className="font-semibold text-zinc-900">
+                              {t.player_name}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-3 text-right font-mono text-zinc-800">
@@ -493,18 +545,26 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
                           {t.profit === null ? (
                             <span className="text-zinc-300">–</span>
                           ) : t.profit > 0 ? (
-                            <span className="font-bold text-emerald-600">+{formatCurrency(t.profit)}</span>
+                            <span className="font-bold text-emerald-600">
+                              +{formatCurrency(t.profit)}
+                            </span>
                           ) : t.profit < 0 ? (
-                            <span className="font-bold text-red-600">{formatCurrency(t.profit)}</span>
+                            <span className="font-bold text-red-600">
+                              {formatCurrency(t.profit)}
+                            </span>
                           ) : (
                             <span className="text-zinc-500">0,00</span>
                           )}
                         </td>
                         <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
                           {t.cash_change > 0 ? (
-                            <span className="text-emerald-600">+{formatCurrency(t.cash_change)}</span>
+                            <span className="text-emerald-600">
+                              +{formatCurrency(t.cash_change)}
+                            </span>
                           ) : (
-                            <span className="text-red-600">{formatCurrency(t.cash_change)}</span>
+                            <span className="text-red-600">
+                              {formatCurrency(t.cash_change)}
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -519,7 +579,8 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
           <SummaryCards summary={summary} />
 
           <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Os totais respeitam os filtros. 300,00 + soma das variações = caixa atual ({formatCurrency(clubCash)}).
+            Os totais respeitam os filtros. 300,00 + soma das variações = caixa
+            atual ({formatCurrency(clubCash)}).
           </p>
         </div>
       )}
@@ -588,17 +649,19 @@ function SummaryCards({ summary }: { summary: TransactionsSummary }) {
         <div
           className={`text-base font-black font-mono mt-1 ${
             summary.total_profit > 0
-              ? 'text-emerald-600'
+              ? "text-emerald-600"
               : summary.total_profit < 0
-              ? 'text-red-600'
-              : 'text-zinc-900'
+                ? "text-red-600"
+                : "text-zinc-900"
           }`}
         >
           {summary.total_profit > 0
             ? `+${formatCurrency(summary.total_profit)}`
             : formatCurrency(summary.total_profit)}
         </div>
-        <div className="text-[10px] text-zinc-400 mt-0.5">Soma dos lucros, com sinal</div>
+        <div className="text-[10px] text-zinc-400 mt-0.5">
+          Soma dos lucros, com sinal
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  X,
-  Activity,
-  Loader2,
-  Check,
-  Minus,
-} from 'lucide-react';
-import { api } from '../services/api';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, X, Activity, Loader2, Check, Minus } from "lucide-react";
+import { leagueService } from "../services/league.service";
 
 interface DuelPlayer {
   player_id: number;
@@ -39,13 +32,13 @@ interface MatchDetail {
   played_at: string;
   home: MatchTeam;
   away: MatchTeam;
-  result: 'MANDANTE' | 'VISITANTE' | 'EMPATE';
+  result: "MANDANTE" | "VISITANTE" | "EMPATE";
   duels: Duel[];
 }
 
 function getPlayerInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
+  if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
@@ -57,25 +50,25 @@ function getPlayerLastName(name: string) {
 
 function formatMatchDate(isoStr: string): string {
   const d = new Date(isoStr);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
   return `${day}/${month}/${year}, ${h}:${m}`;
 }
 
 function resultLabel(result: string): string {
-  if (result === 'MANDANTE') return 'Vitória do mandante';
-  if (result === 'VISITANTE') return 'Vitória do visitante';
-  return 'Empate';
+  if (result === "MANDANTE") return "Vitória do mandante";
+  if (result === "VISITANTE") return "Vitória do visitante";
+  return "Empate";
 }
 
 function attributeLabel(attr: string): string {
-  if (attr === 'shooting') return 'Finalização';
-  if (attr === 'passing') return 'Passe';
-  if (attr === 'dribbling') return 'Drible';
-  if (attr === 'defending') return 'Defesa';
+  if (attr === "shooting") return "Finalização";
+  if (attr === "passing") return "Passe";
+  if (attr === "dribbling") return "Drible";
+  if (attr === "defending") return "Defesa";
   return attr;
 }
 
@@ -95,10 +88,10 @@ export function MatchDetail() {
     async function loadMatch() {
       try {
         setLoading(true);
-        const res = await api.get(`/matches/${id}`);
+        const res = await leagueService.getMatch(id ?? "");
         setMatch(res.data);
       } catch (err: any) {
-        setError(err.message || 'Partida não encontrada.');
+        setError(err.message || "Partida não encontrada.");
       } finally {
         setLoading(false);
       }
@@ -118,29 +111,37 @@ export function MatchDetail() {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => navigate('/matches')}
+          onClick={() => navigate("/matches")}
           className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar para partidas
         </button>
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-red-700 text-sm">
-          {error || 'Partida não encontrada.'}
+          {error || "Partida não encontrada."}
         </div>
       </div>
     );
   }
 
-  const homeDuels = match.duels.filter((d) => d.attacking_club_id === match.home.club_id);
-  const awayDuels = match.duels.filter((d) => d.attacking_club_id === match.away.club_id);
+  const homeDuels = match.duels.filter(
+    (d) => d.attacking_club_id === match.home.club_id,
+  );
+  const awayDuels = match.duels.filter(
+    (d) => d.attacking_club_id === match.away.club_id,
+  );
   const homeGoals = homeDuels.filter((d) => d.goal).length;
   const awayGoals = awayDuels.filter((d) => d.goal).length;
 
   // Build a deduped list of all players from duels for pitch display
-  const allDuelPlayers = new Map<number, { name: string; position: string; condition: string; team: 'home' | 'away' }>();
+  const allDuelPlayers = new Map<
+    number,
+    { name: string; position: string; condition: string; team: "home" | "away" }
+  >();
   match.duels.forEach((d) => {
-    const atkTeam = d.attacking_club_id === match.home.club_id ? 'home' : 'away';
-    const defTeam = atkTeam === 'home' ? 'away' : 'home';
+    const atkTeam =
+      d.attacking_club_id === match.home.club_id ? "home" : "away";
+    const defTeam = atkTeam === "home" ? "away" : "home";
     if (!allDuelPlayers.has(d.attacker.player_id)) {
       allDuelPlayers.set(d.attacker.player_id, {
         name: d.attacker.player_name,
@@ -161,9 +162,13 @@ export function MatchDetail() {
 
   // Get home team acronym
   function getAcronymFromName(name: string): string {
-    const parts = name.split(' ');
+    const parts = name.split(" ");
     if (parts.length >= 2) {
-      return parts.map(p => p[0]).join('').substring(0, 3).toUpperCase();
+      return parts
+        .map((p) => p[0])
+        .join("")
+        .substring(0, 3)
+        .toUpperCase();
     }
     return name.substring(0, 3).toUpperCase();
   }
@@ -172,13 +177,21 @@ export function MatchDetail() {
   const awayAcronym = getAcronymFromName(match.away.club_name);
 
   // Build pitch lineup from duels data (5 per team, ordered by position)
-  function buildPitchPlayers(team: 'home' | 'away') {
-    const players: { name: string; position: string; condition: string; initials: string; attribute?: string; value?: number }[] = [];
+  function buildPitchPlayers(team: "home" | "away") {
+    const players: {
+      name: string;
+      position: string;
+      condition: string;
+      initials: string;
+      attribute?: string;
+      value?: number;
+    }[] = [];
     const seenIds = new Set<number>();
 
     match!.duels.forEach((d) => {
-      const atkTeam = d.attacking_club_id === match!.home.club_id ? 'home' : 'away';
-      const defTeam = atkTeam === 'home' ? 'away' : 'home';
+      const atkTeam =
+        d.attacking_club_id === match!.home.club_id ? "home" : "away";
+      const defTeam = atkTeam === "home" ? "away" : "home";
 
       if (atkTeam === team && !seenIds.has(d.attacker.player_id)) {
         seenIds.add(d.attacker.player_id);
@@ -205,19 +218,27 @@ export function MatchDetail() {
     });
 
     // Sort: GOL first, then by position order
-    const posOrder: Record<string, number> = { GOL: 0, ZAG: 1, LAT: 2, MEI: 3, ATA: 4 };
-    players.sort((a, b) => (posOrder[a.position] ?? 5) - (posOrder[b.position] ?? 5));
+    const posOrder: Record<string, number> = {
+      GOL: 0,
+      ZAG: 1,
+      LAT: 2,
+      MEI: 3,
+      ATA: 4,
+    };
+    players.sort(
+      (a, b) => (posOrder[a.position] ?? 5) - (posOrder[b.position] ?? 5),
+    );
     return players;
   }
 
-  const homePitchPlayers = buildPitchPlayers('home');
-  const awayPitchPlayers = buildPitchPlayers('away');
+  const homePitchPlayers = buildPitchPlayers("home");
+  const awayPitchPlayers = buildPitchPlayers("away");
 
   return (
     <div className="space-y-6 font-sans">
       {/* Back link */}
       <button
-        onClick={() => navigate('/matches')}
+        onClick={() => navigate("/matches")}
         className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 font-medium transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -231,10 +252,12 @@ export function MatchDetail() {
             <Check className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
-            <div className="text-sm font-bold text-zinc-900">Partida jogada</div>
+            <div className="text-sm font-bold text-zinc-900">
+              Partida jogada
+            </div>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {match.home.club_name} {match.home.goals} × {match.away.goals} {match.away.club_name}. Placar e duelos
-              devolvidos pela API.
+              {match.home.club_name} {match.home.goals} × {match.away.goals}{" "}
+              {match.away.club_name}. Placar e duelos devolvidos pela API.
             </p>
           </div>
           <button
@@ -251,7 +274,9 @@ export function MatchDetail() {
         <div className="flex items-center justify-center gap-8">
           {/* Home */}
           <div className="text-right">
-            <div className="font-bold text-zinc-900 text-base">{match.home.club_name}</div>
+            <div className="font-bold text-zinc-900 text-base">
+              {match.home.club_name}
+            </div>
             <div className="text-[10px] text-zinc-400 mt-0.5">
               Mandante · {match.home.formation}
             </div>
@@ -263,11 +288,13 @@ export function MatchDetail() {
           {/* Score */}
           <div className="text-center min-w-[100px]">
             <div className="text-3xl font-black text-zinc-900 tracking-tight leading-none">
-              {match.home.goals}{' '}
-              <span className="text-zinc-300 font-medium">×</span>{' '}
+              {match.home.goals}{" "}
+              <span className="text-zinc-300 font-medium">×</span>{" "}
               {match.away.goals}
             </div>
-            <div className="text-[10px] text-zinc-400 mt-1.5">{formatMatchDate(match.played_at)}</div>
+            <div className="text-[10px] text-zinc-400 mt-1.5">
+              {formatMatchDate(match.played_at)}
+            </div>
             <div className="text-[10px] text-zinc-500 font-medium mt-0.5">
               {resultLabel(match.result)}
             </div>
@@ -278,7 +305,9 @@ export function MatchDetail() {
           </span>
           {/* Away */}
           <div className="text-left">
-            <div className="font-bold text-zinc-900 text-base">{match.away.club_name}</div>
+            <div className="font-bold text-zinc-900 text-base">
+              {match.away.club_name}
+            </div>
             <div className="text-[10px] text-zinc-400 mt-0.5">
               Visitante · {match.away.formation}
             </div>
@@ -292,7 +321,8 @@ export function MatchDetail() {
           <div>
             <h2 className="text-sm font-bold text-zinc-900">Em campo</h2>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Titulares de cada clube na formação da partida e os valores usados nos duelos, já com o efeito da condição.
+              Titulares de cada clube na formação da partida e os valores usados
+              nos duelos, já com o efeito da condição.
             </p>
           </div>
           <div className="flex items-center gap-4 text-[10px] text-zinc-500">
@@ -339,14 +369,16 @@ export function MatchDetail() {
           {/* Team label - Home (left) */}
           <div className="absolute top-4 left-6 z-20 flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-bold text-white/90 tracking-wide">
-              {homeAcronym} {match.home.club_name} · {match.home.formation} · ataca →
+              {homeAcronym} {match.home.club_name} · {match.home.formation} ·
+              ataca →
             </span>
           </div>
 
           {/* Team label - Away (right) */}
           <div className="absolute top-4 right-6 z-20 flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-bold text-white/90 tracking-wide">
-              {awayAcronym} {match.away.club_name} · {match.away.formation} · ataca ←
+              {awayAcronym} {match.away.club_name} · {match.away.formation} ·
+              ataca ←
             </span>
           </div>
 
@@ -370,7 +402,9 @@ export function MatchDetail() {
       <div>
         <h2 className="text-sm font-bold text-zinc-900 mb-1">Duelos</h2>
         <p className="text-[11px] text-zinc-400 mb-4 leading-relaxed max-w-2xl">
-          Os 3 ataques do mandante e depois os 3 do visitante. Os jogadores de linha vão do 1° (o mais recuado) ao 4° (o mais avançado), pela ordem do elenco: o 4° ataca o goleiro, o 3° ataca o 1° e o 2° ataca o 2°.
+          Os 3 ataques do mandante e depois os 3 do visitante. Os jogadores de
+          linha vão do 1° (o mais recuado) ao 4° (o mais avançado), pela ordem
+          do elenco: o 4° ataca o goleiro, o 3° ataca o 1° e o 2° ataca o 2°.
         </p>
 
         <div className="bg-white border border-zinc-200 rounded-2xl shadow-2xs overflow-hidden">
@@ -382,13 +416,18 @@ export function MatchDetail() {
                 <th className="text-center py-2.5 px-3 font-medium">Ataque</th>
                 <th className="text-left py-2.5 px-3 font-medium">Defensor</th>
                 <th className="text-center py-2.5 px-3 font-medium">Defesa</th>
-                <th className="text-center py-2.5 px-3 font-medium">Resultado</th>
+                <th className="text-center py-2.5 px-3 font-medium">
+                  Resultado
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-50">
               {/* Home attacks header */}
               <tr className="bg-zinc-50/80">
-                <td colSpan={5} className="py-2 px-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                <td
+                  colSpan={5}
+                  className="py-2 px-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider"
+                >
                   <span className="inline-flex items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-[9px] font-mono font-bold text-zinc-600">
                       {homeAcronym}
@@ -397,7 +436,7 @@ export function MatchDetail() {
                   </span>
                 </td>
                 <td className="py-2 px-3 text-right text-[10px] font-bold text-zinc-500">
-                  {homeGoals} gol{homeGoals !== 1 ? 's' : ''}
+                  {homeGoals} gol{homeGoals !== 1 ? "s" : ""}
                 </td>
               </tr>
 
@@ -407,7 +446,10 @@ export function MatchDetail() {
 
               {/* Away attacks header */}
               <tr className="bg-zinc-50/80">
-                <td colSpan={5} className="py-2 px-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                <td
+                  colSpan={5}
+                  className="py-2 px-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider"
+                >
                   <span className="inline-flex items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-[9px] font-mono font-bold text-zinc-600">
                       {awayAcronym}
@@ -416,7 +458,7 @@ export function MatchDetail() {
                   </span>
                 </td>
                 <td className="py-2 px-3 text-right text-[10px] font-bold text-zinc-500">
-                  {awayGoals} gol{awayGoals !== 1 ? 's' : ''}
+                  {awayGoals} gol{awayGoals !== 1 ? "s" : ""}
                 </td>
               </tr>
 
@@ -429,9 +471,10 @@ export function MatchDetail() {
       </div>
 
       <p className="text-[11px] text-zinc-400 leading-relaxed">
-        Mesma tela logo depois de jogar e ao abrir uma partida do histórico, com as formações dos dois clubes e os 6 duelos.
-        Os valores e a condição de cada titular vêm gravados nos duelos devolvidos pela API;
-        mal condicionado joga com 15% a menos (RN20).
+        Mesma tela logo depois de jogar e ao abrir uma partida do histórico, com
+        as formações dos dois clubes e os 6 duelos. Os valores e a condição de
+        cada titular vêm gravados nos duelos devolvidos pela API; mal
+        condicionado joga com 15% a menos (RN20).
       </p>
     </div>
   );
@@ -443,18 +486,29 @@ function PitchPlayer({
   player,
   team,
 }: {
-  player: { name: string; position: string; condition: string; initials: string; attribute?: string; value?: number };
-  team: 'home' | 'away';
+  player: {
+    name: string;
+    position: string;
+    condition: string;
+    initials: string;
+    attribute?: string;
+    value?: number;
+  };
+  team: "home" | "away";
 }) {
-  const isMal = player.condition === 'MAL_CONDICIONADO';
+  const isMal = player.condition === "MAL_CONDICIONADO";
   const lastName = getPlayerLastName(player.name);
 
   return (
     <div className="flex flex-col items-center relative">
       <div className="relative">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border-2 border-white shadow-md ${
-          team === 'home' ? 'bg-[#155DFC] text-white' : 'bg-white text-zinc-800'
-        }`}>
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border-2 border-white shadow-md ${
+            team === "home"
+              ? "bg-[#155DFC] text-white"
+              : "bg-white text-zinc-800"
+          }`}
+        >
           {player.initials}
         </div>
         {isMal && (
@@ -467,7 +521,7 @@ function PitchPlayer({
         {lastName}
       </div>
       <div className="text-[8px] text-white/70 font-mono mt-0.5 text-center">
-        {player.position} · {player.attribute || 'Def'} {player.value}
+        {player.position} · {player.attribute || "Def"} {player.value}
       </div>
     </div>
   );
@@ -488,16 +542,20 @@ function DuelRow({ duel }: { duel: Duel }) {
             {atkInitials}
           </span>
           <div>
-            <div className="font-semibold text-zinc-900">{duel.attacker.player_name}</div>
+            <div className="font-semibold text-zinc-900">
+              {duel.attacker.player_name}
+            </div>
             <div className="text-[10px] text-zinc-400">
-              {positionLabel(duel.attacker.position)}, {getLineNumber(duel.attacker.position)} de linha · {getClubLabel(duel)}
+              {positionLabel(duel.attacker.position)},{" "}
+              {getLineNumber(duel.attacker.position)} de linha ·{" "}
+              {getClubLabel(duel)}
             </div>
           </div>
         </div>
       </td>
       <td className="py-3 px-3 text-center">
         <div className="font-mono font-bold text-zinc-800">
-          {attributeLabel(duel.attacker.attribute)}{' '}
+          {attributeLabel(duel.attacker.attribute)}{" "}
           <span className="text-base font-black">{duel.attacker.value}</span>
         </div>
       </td>
@@ -507,16 +565,20 @@ function DuelRow({ duel }: { duel: Duel }) {
             {defInitials}
           </span>
           <div>
-            <div className="font-semibold text-zinc-900">{duel.defender.player_name}</div>
+            <div className="font-semibold text-zinc-900">
+              {duel.defender.player_name}
+            </div>
             <div className="text-[10px] text-zinc-400">
-              {positionLabel(duel.defender.position)}, {getLineNumber(duel.defender.position)} de linha
+              {positionLabel(duel.defender.position)},{" "}
+              {getLineNumber(duel.defender.position)} de linha
             </div>
           </div>
         </div>
       </td>
       <td className="py-3 px-3 text-center">
         <span className="font-mono font-bold text-zinc-800">
-          Defesa <span className="text-base font-black">{duel.defender.value}</span>
+          Defesa{" "}
+          <span className="text-base font-black">{duel.defender.value}</span>
         </span>
       </td>
       <td className="py-3 px-3 text-center">
@@ -536,15 +598,15 @@ function DuelRow({ duel }: { duel: Duel }) {
 
 function getLineNumber(position: string): string {
   const lineMap: Record<string, string> = {
-    GOL: 'Goleiro',
-    ZAG: '1°',
-    LAT: '2°',
-    MEI: '3°',
-    ATA: '4°',
+    GOL: "Goleiro",
+    ZAG: "1°",
+    LAT: "2°",
+    MEI: "3°",
+    ATA: "4°",
   };
   return lineMap[position] || position;
 }
 
 function getClubLabel(_duel: Duel): string {
-  return '';
+  return "";
 }

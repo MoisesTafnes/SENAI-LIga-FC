@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  X, 
-  ChevronLeft, 
-  ChevronRight, 
-  MoreHorizontal, 
-  ShoppingCart, 
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Users,
+  Plus,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  ShoppingCart,
   Activity,
   Edit,
   Trash2,
@@ -17,15 +17,20 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react';
-import { api } from '../../../services/api';
-import { Player } from '../types/player.types';
-import { CreatePlayerModal, ConditionModal, EditPlayerModal } from '../components/PlayerModals';
-import { BuyPlayerModal } from '../components/BuyPlayerModal';
+} from "lucide-react";
+import { Player } from "../types/player.types";
+import {
+  CreatePlayerModal,
+  ConditionModal,
+  EditPlayerModal,
+} from "../components/PlayerModals";
+import { BuyPlayerModal } from "../components/BuyPlayerModal";
+import { playersService } from "../services/players.service";
+import { clubsService } from "../../clubs/services/clubs.service";
 
 interface Toast {
   id: number;
-  type: 'success' | 'error';
+  type: "success" | "error";
   title: string;
   message: string;
 }
@@ -35,30 +40,40 @@ let toastIdCounter = 0;
 export function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [meta, setMeta] = useState({ page: 1, limit: 10, total_items: 0, total_pages: 0 });
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 10,
+    total_items: 0,
+    total_pages: 0,
+  });
 
   // Contadores para as abas
   const [tabCounts, setTabCounts] = useState({ all: 0, free: 0, club: 0 });
 
   // Filtros
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [positionFilter, setPositionFilter] = useState<string>('');
-  const [conditionFilter, setConditionFilter] = useState<string>('');
-  const [clubFilter, setClubFilter] = useState<string>('');
-  const [ageRange, setAgeRange] = useState<string>('');
-  const [valueRange, setValueRange] = useState<string>('');
-  const [statusTab, setStatusTab] = useState<'all' | 'free' | 'club'>('all');
-  const [sortOption, setSortOption] = useState<string>('name');
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState<string>("");
+  const [conditionFilter, setConditionFilter] = useState<string>("");
+  const [clubFilter, setClubFilter] = useState<string>("");
+  const [ageRange, setAgeRange] = useState<string>("");
+  const [valueRange, setValueRange] = useState<string>("");
+  const [statusTab, setStatusTab] = useState<"all" | "free" | "club">("all");
+  const [sortOption, setSortOption] = useState<string>("name");
 
   // Clubes para o filtro e compra
-  const [clubs, setClubs] = useState<{ id: number; name: string; acronym: string; cash: number }[]>([]);
+  const [clubs, setClubs] = useState<
+    { id: number; name: string; acronym: string; cash: number }[]
+  >([]);
 
   // Estados de modais
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedPlayerForBuy, setSelectedPlayerForBuy] = useState<Player | null>(null);
-  const [selectedPlayerForCondition, setSelectedPlayerForCondition] = useState<Player | null>(null);
-  const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<Player | null>(null);
+  const [selectedPlayerForBuy, setSelectedPlayerForBuy] =
+    useState<Player | null>(null);
+  const [selectedPlayerForCondition, setSelectedPlayerForCondition] =
+    useState<Player | null>(null);
+  const [selectedPlayerForEdit, setSelectedPlayerForEdit] =
+    useState<Player | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [actionMenuOpenId, setActionMenuOpenId] = useState<number | null>(null);
 
@@ -70,22 +85,31 @@ export function PlayersPage() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const showToast = useCallback((type: 'success' | 'error', title: string, message: string) => {
-    const id = ++toastIdCounter;
-    setToasts((prev) => [...prev, { id, type, title, message }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4500);
-  }, []);
+  const showToast = useCallback(
+    (type: "success" | "error", title: string, message: string) => {
+      const id = ++toastIdCounter;
+      setToasts((prev) => [...prev, { id, type, title, message }]);
+      setTimeout(
+        () => setToasts((prev) => prev.filter((t) => t.id !== id)),
+        4500,
+      );
+    },
+    [],
+  );
 
   // Fecha dropdowns ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpenDropdown(null);
         setActionMenuOpenId(null);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Debounce da busca por nome
@@ -98,8 +122,7 @@ export function PlayersPage() {
   useEffect(() => {
     async function fetchClubsList() {
       try {
-        const res = await api.get('/clubs');
-        const cData = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const cData = await clubsService.getClubs();
         setClubs(cData);
       } catch {
         // Fallback
@@ -111,8 +134,8 @@ export function PlayersPage() {
   // Carrega contagens totais para as abas
   async function fetchTabCounts() {
     try {
-      const res = await api.get('/players?limit=100');
-      const allP = res.data?.data || res.data || [];
+      const res = await playersService.getAllPlayers();
+      const allP = res?.data || res || [];
       const freeCount = allP.filter((p: any) => !p.club_id).length;
       const clubCount = allP.filter((p: any) => !!p.club_id).length;
       setTabCounts({
@@ -143,9 +166,9 @@ export function PlayersPage() {
       if (positionFilter) params.position = positionFilter;
       if (conditionFilter) params.condition = conditionFilter;
 
-      if (statusTab === 'free') {
+      if (statusTab === "free") {
         params.free = true;
-      } else if (statusTab === 'club') {
+      } else if (statusTab === "club") {
         params.free = false;
         if (clubFilter) params.club_id = Number(clubFilter);
       } else {
@@ -153,19 +176,19 @@ export function PlayersPage() {
       }
 
       if (ageRange) {
-        const [min, max] = ageRange.split('-');
+        const [min, max] = ageRange.split("-");
         if (min) params.min_age = Number(min);
         if (max) params.max_age = Number(max);
       }
 
       if (valueRange) {
-        const [min, max] = valueRange.split('-');
+        const [min, max] = valueRange.split("-");
         if (min) params.min_value = Number(min);
         if (max) params.max_value = Number(max);
       }
 
-      const res = await api.get('/players', { params });
-      const responseData: Player[] = res.data?.data || res.data || [];
+      const res = await playersService.getPlayers(params);
+      const responseData: Player[] = res?.data || res || [];
       const enrichedPlayers = Array.isArray(responseData)
         ? responseData.map((p) => {
             if (p.club_id && !p.club_name) {
@@ -183,8 +206,8 @@ export function PlayersPage() {
         : [];
 
       setPlayers(enrichedPlayers);
-      if (res.data?.meta) {
-        setMeta(res.data.meta);
+      if (res?.meta) {
+        setMeta(res.meta);
       } else {
         setMeta({
           page: 1,
@@ -194,7 +217,11 @@ export function PlayersPage() {
         });
       }
     } catch (err: any) {
-      setFetchError(err.response?.data?.message || err.message || 'Não foi possível carregar os dados. Verifique a conexão e tente de novo.');
+      setFetchError(
+        err.response?.data?.message ||
+          err.message ||
+          "Não foi possível carregar os dados. Verifique a conexão e tente de novo.",
+      );
       setPlayers([]);
       setMeta({ page: 1, limit: 10, total_items: 0, total_pages: 0 });
     } finally {
@@ -227,48 +254,60 @@ export function PlayersPage() {
     if (!playerToDelete) return;
     const name = playerToDelete.name;
     try {
-      await api.delete(`/players/${playerToDelete.id}`);
+      await playersService.deletePlayer(playerToDelete.id);
       setPlayerToDelete(null);
       fetchPlayers();
       fetchTabCounts();
-      showToast('success', 'Jogador excluído', `${name} saiu da lista. Transações e partidas antigas dele continuam gravadas.`);
+      showToast(
+        "success",
+        "Jogador excluído",
+        `${name} saiu da lista. Transações e partidas antigas dele continuam gravadas.`,
+      );
     } catch (err: any) {
-      showToast('error', 'Erro ao excluir', err.response?.data?.message || 'Erro ao excluir jogador.');
+      showToast(
+        "error",
+        "Erro ao excluir",
+        err.response?.data?.message || "Erro ao excluir jogador.",
+      );
       setPlayerToDelete(null);
     }
   }
 
   const getInitials = (name: string) => {
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2)
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
 
   const getInitialColors = (index: number) => {
     const colors = [
-      { bg: '#F4F4F5', text: '#52525B' },
-      { bg: '#FDF2F8', text: '#DB2777' },
-      { bg: '#FDF4FF', text: '#C026D3' },
-      { bg: '#EFF6FF', text: '#2563EB' },
-      { bg: '#F0FDF4', text: '#16A34A' },
-      { bg: '#F5F3FF', text: '#7C3AED' },
+      { bg: "#F4F4F5", text: "#52525B" },
+      { bg: "#FDF2F8", text: "#DB2777" },
+      { bg: "#FDF4FF", text: "#C026D3" },
+      { bg: "#EFF6FF", text: "#2563EB" },
+      { bg: "#F0FDF4", text: "#16A34A" },
+      { bg: "#F5F3FF", text: "#7C3AED" },
     ];
     return colors[index % colors.length];
   };
 
   const formatCurrency = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return '0,00';
-    return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (val === null || val === undefined) return "0,00";
+    return Number(val).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   const clearAllFilters = () => {
-    setSearch('');
-    setDebouncedSearch('');
-    setPositionFilter('');
-    setConditionFilter('');
-    setClubFilter('');
-    setAgeRange('');
-    setValueRange('');
+    setSearch("");
+    setDebouncedSearch("");
+    setPositionFilter("");
+    setConditionFilter("");
+    setClubFilter("");
+    setAgeRange("");
+    setValueRange("");
     setMeta({ ...meta, page: 1 });
   };
 
@@ -290,9 +329,12 @@ export function PlayersPage() {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Jogadores</h1>
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+              Jogadores
+            </h1>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Cadastre jogadores, acompanhe os indicadores e compre os que estão livres.
+              Cadastre jogadores, acompanhe os indicadores e compre os que estão
+              livres.
             </p>
           </div>
         </div>
@@ -320,7 +362,7 @@ export function PlayersPage() {
           />
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearch("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
             >
               <X className="w-3.5 h-3.5" />
@@ -332,30 +374,40 @@ export function PlayersPage() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setOpenDropdown(openDropdown === 'pos' ? null : 'pos')}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "pos" ? null : "pos")
+            }
             className={`h-8.5 px-3 border rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               positionFilter
-                ? 'border-[#155DFC] bg-blue-50/50 text-[#155DFC]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                ? "border-[#155DFC] bg-blue-50/50 text-[#155DFC]"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
-            <span>Posição{positionFilter ? `: ${positionFilter}` : ''}</span>
+            <span>Posição{positionFilter ? `: ${positionFilter}` : ""}</span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
-          {openDropdown === 'pos' && (
+          {openDropdown === "pos" && (
             <div className="absolute top-full left-0 mt-1 w-44 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs">
               <button
-                onClick={() => { setPositionFilter(''); setOpenDropdown(null); }}
+                onClick={() => {
+                  setPositionFilter("");
+                  setOpenDropdown(null);
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-zinc-50 text-zinc-600"
               >
                 Todas as posições
               </button>
-              {['GOL', 'ZAG', 'LAT', 'MEI', 'ATA'].map((pos) => (
+              {["GOL", "ZAG", "LAT", "MEI", "ATA"].map((pos) => (
                 <button
                   key={pos}
-                  onClick={() => { setPositionFilter(pos); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setPositionFilter(pos);
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium ${
-                    positionFilter === pos ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    positionFilter === pos
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {pos}
@@ -369,39 +421,49 @@ export function PlayersPage() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setOpenDropdown(openDropdown === 'cond' ? null : 'cond')}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "cond" ? null : "cond")
+            }
             className={`h-8.5 px-3 border rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               conditionFilter
-                ? 'border-[#155DFC] bg-blue-50/50 text-[#155DFC]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                ? "border-[#155DFC] bg-blue-50/50 text-[#155DFC]"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
             <span>
               Condição
-              {conditionFilter === 'APTO' && ': Apto'}
-              {conditionFilter === 'MAL_CONDICIONADO' && ': Mal condicionado'}
-              {conditionFilter === 'DOENTE' && ': Doente'}
+              {conditionFilter === "APTO" && ": Apto"}
+              {conditionFilter === "MAL_CONDICIONADO" && ": Mal condicionado"}
+              {conditionFilter === "DOENTE" && ": Doente"}
             </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
-          {openDropdown === 'cond' && (
+          {openDropdown === "cond" && (
             <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs">
               <button
-                onClick={() => { setConditionFilter(''); setOpenDropdown(null); }}
+                onClick={() => {
+                  setConditionFilter("");
+                  setOpenDropdown(null);
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-zinc-50 text-zinc-600"
               >
                 Todas as condições
               </button>
               {[
-                { val: 'APTO', label: 'Apto' },
-                { val: 'MAL_CONDICIONADO', label: 'Mal condicionado' },
-                { val: 'DOENTE', label: 'Doente' },
+                { val: "APTO", label: "Apto" },
+                { val: "MAL_CONDICIONADO", label: "Mal condicionado" },
+                { val: "DOENTE", label: "Doente" },
               ].map((c) => (
                 <button
                   key={c.val}
-                  onClick={() => { setConditionFilter(c.val); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setConditionFilter(c.val);
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium ${
-                    conditionFilter === c.val ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    conditionFilter === c.val
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {c.label}
@@ -415,37 +477,43 @@ export function PlayersPage() {
         <div className="relative group">
           <button
             type="button"
-            disabled={statusTab === 'free'}
-            onClick={() => statusTab !== 'free' && setOpenDropdown(openDropdown === 'club' ? null : 'club')}
+            disabled={statusTab === "free"}
+            onClick={() =>
+              statusTab !== "free" &&
+              setOpenDropdown(openDropdown === "club" ? null : "club")
+            }
             className={`h-8.5 px-3 border rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-              statusTab === 'free'
-                ? 'border-zinc-200 bg-zinc-50 text-zinc-400 cursor-not-allowed opacity-75'
+              statusTab === "free"
+                ? "border-zinc-200 bg-zinc-50 text-zinc-400 cursor-not-allowed opacity-75"
                 : clubFilter
-                ? 'border-[#155DFC] bg-blue-50/50 text-[#155DFC]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                  ? "border-[#155DFC] bg-blue-50/50 text-[#155DFC]"
+                  : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
             <span>
               Clube
               {clubFilter && clubs.find((c) => String(c.id) === clubFilter)
                 ? `: ${clubs.find((c) => String(c.id) === clubFilter)?.name}`
-                : ''}
+                : ""}
             </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
 
           {/* Tooltip quando "Livres" ativo (J04) */}
-          {statusTab === 'free' && (
+          {statusTab === "free" && (
             <div className="hidden group-hover:flex absolute -top-8 left-1/2 -translate-x-1/2 z-40 bg-zinc-900 text-white text-[10px] py-1 px-2.5 rounded shadow-lg whitespace-nowrap items-center gap-1">
               <Info className="w-3 h-3 text-white" />
               <span>"Livres" não combina com o filtro por clube.</span>
             </div>
           )}
 
-          {openDropdown === 'club' && statusTab !== 'free' && (
+          {openDropdown === "club" && statusTab !== "free" && (
             <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs max-h-56 overflow-y-auto">
               <button
-                onClick={() => { setClubFilter(''); setOpenDropdown(null); }}
+                onClick={() => {
+                  setClubFilter("");
+                  setOpenDropdown(null);
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-zinc-50 text-zinc-600"
               >
                 Todos os clubes
@@ -453,9 +521,14 @@ export function PlayersPage() {
               {clubs.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => { setClubFilter(String(c.id)); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setClubFilter(String(c.id));
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium truncate ${
-                    clubFilter === String(c.id) ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    clubFilter === String(c.id)
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {c.name} ({c.acronym})
@@ -469,36 +542,48 @@ export function PlayersPage() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setOpenDropdown(openDropdown === 'age' ? null : 'age')}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "age" ? null : "age")
+            }
             className={`h-8.5 px-3 border rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               ageRange
-                ? 'border-[#155DFC] bg-blue-50/50 text-[#155DFC]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                ? "border-[#155DFC] bg-blue-50/50 text-[#155DFC]"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
-            <span>Idade{ageRange ? `: ${ageRange.replace('-', ' a ')}` : ''}</span>
+            <span>
+              Idade{ageRange ? `: ${ageRange.replace("-", " a ")}` : ""}
+            </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
-          {openDropdown === 'age' && (
+          {openDropdown === "age" && (
             <div className="absolute top-full left-0 mt-1 w-44 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs">
               <button
-                onClick={() => { setAgeRange(''); setOpenDropdown(null); }}
+                onClick={() => {
+                  setAgeRange("");
+                  setOpenDropdown(null);
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-zinc-50 text-zinc-600"
               >
                 Qualquer idade
               </button>
               {[
-                { label: '16 a 21 anos', val: '16-21' },
-                { label: '18 a 30 anos', val: '18-30' },
-                { label: '22 a 28 anos', val: '22-28' },
-                { label: '29 a 35 anos', val: '29-35' },
-                { label: '36 a 45 anos', val: '36-45' },
+                { label: "16 a 21 anos", val: "16-21" },
+                { label: "18 a 30 anos", val: "18-30" },
+                { label: "22 a 28 anos", val: "22-28" },
+                { label: "29 a 35 anos", val: "29-35" },
+                { label: "36 a 45 anos", val: "36-45" },
               ].map((item) => (
                 <button
                   key={item.val}
-                  onClick={() => { setAgeRange(item.val); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setAgeRange(item.val);
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium ${
-                    ageRange === item.val ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    ageRange === item.val
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {item.label}
@@ -512,41 +597,51 @@ export function PlayersPage() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setOpenDropdown(openDropdown === 'val' ? null : 'val')}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "val" ? null : "val")
+            }
             className={`h-8.5 px-3 border rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               valueRange
-                ? 'border-[#155DFC] bg-blue-50/50 text-[#155DFC]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                ? "border-[#155DFC] bg-blue-50/50 text-[#155DFC]"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
             <span>
               Valor de mercado
-              {valueRange === '0-30' && ': até 30,00'}
-              {valueRange === '10-60' && ': 10,00 a 60,00'}
-              {valueRange === '30-70' && ': 30,00 a 70,00'}
-              {valueRange === '70-1000' && ': acima de 70,00'}
+              {valueRange === "0-30" && ": até 30,00"}
+              {valueRange === "10-60" && ": 10,00 a 60,00"}
+              {valueRange === "30-70" && ": 30,00 a 70,00"}
+              {valueRange === "70-1000" && ": acima de 70,00"}
             </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
-          {openDropdown === 'val' && (
+          {openDropdown === "val" && (
             <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs">
               <button
-                onClick={() => { setValueRange(''); setOpenDropdown(null); }}
+                onClick={() => {
+                  setValueRange("");
+                  setOpenDropdown(null);
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-zinc-50 text-zinc-600"
               >
                 Qualquer valor
               </button>
               {[
-                { label: 'Até 30,00 moedas', val: '0-30' },
-                { label: '10,00 a 60,00 moedas', val: '10-60' },
-                { label: '30,00 a 70,00 moedas', val: '30-70' },
-                { label: 'Acima de 70,00 moedas', val: '70-1000' },
+                { label: "Até 30,00 moedas", val: "0-30" },
+                { label: "10,00 a 60,00 moedas", val: "10-60" },
+                { label: "30,00 a 70,00 moedas", val: "30-70" },
+                { label: "Acima de 70,00 moedas", val: "70-1000" },
               ].map((item) => (
                 <button
                   key={item.val}
-                  onClick={() => { setValueRange(item.val); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setValueRange(item.val);
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium ${
-                    valueRange === item.val ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    valueRange === item.val
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {item.label}
@@ -561,13 +656,16 @@ export function PlayersPage() {
       {activeFiltersCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs pt-0.5">
           <span className="text-zinc-400 text-[11px] font-medium">
-            {debouncedSearch ? 'Resultados para a busca:' : 'Filtros ativos:'}
+            {debouncedSearch ? "Resultados para a busca:" : "Filtros ativos:"}
           </span>
 
           {debouncedSearch && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
               <span>Busca: {debouncedSearch}</span>
-              <button onClick={() => setSearch('')} className="hover:text-zinc-950">
+              <button
+                onClick={() => setSearch("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -576,9 +674,17 @@ export function PlayersPage() {
           {conditionFilter && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
               <span>
-                Condição: {conditionFilter === 'MAL_CONDICIONADO' ? 'Mal condicionado' : conditionFilter === 'DOENTE' ? 'Doente' : 'Apto'}
+                Condição:{" "}
+                {conditionFilter === "MAL_CONDICIONADO"
+                  ? "Mal condicionado"
+                  : conditionFilter === "DOENTE"
+                    ? "Doente"
+                    : "Apto"}
               </span>
-              <button onClick={() => setConditionFilter('')} className="hover:text-zinc-950">
+              <button
+                onClick={() => setConditionFilter("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -586,8 +692,11 @@ export function PlayersPage() {
 
           {ageRange && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
-              <span>Idade: {ageRange.replace('-', ' a ')}</span>
-              <button onClick={() => setAgeRange('')} className="hover:text-zinc-950">
+              <span>Idade: {ageRange.replace("-", " a ")}</span>
+              <button
+                onClick={() => setAgeRange("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -596,9 +705,13 @@ export function PlayersPage() {
           {valueRange && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
               <span>
-                Valor de mercado: {valueRange === '10-60' ? '10,00 a 60,00' : valueRange}
+                Valor de mercado:{" "}
+                {valueRange === "10-60" ? "10,00 a 60,00" : valueRange}
               </span>
-              <button onClick={() => setValueRange('')} className="hover:text-zinc-950">
+              <button
+                onClick={() => setValueRange("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -607,7 +720,10 @@ export function PlayersPage() {
           {positionFilter && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
               <span>Posição: {positionFilter}</span>
-              <button onClick={() => setPositionFilter('')} className="hover:text-zinc-950">
+              <button
+                onClick={() => setPositionFilter("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -615,8 +731,13 @@ export function PlayersPage() {
 
           {clubFilter && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 text-zinc-800 rounded-full font-medium text-[11px]">
-              <span>Clube: {clubs.find((c) => String(c.id) === clubFilter)?.name}</span>
-              <button onClick={() => setClubFilter('')} className="hover:text-zinc-950">
+              <span>
+                Clube: {clubs.find((c) => String(c.id) === clubFilter)?.name}
+              </span>
+              <button
+                onClick={() => setClubFilter("")}
+                className="hover:text-zinc-950"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -635,44 +756,59 @@ export function PlayersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <div className="inline-flex p-1 bg-zinc-100 rounded-xl text-xs font-semibold text-zinc-600">
           <button
-            onClick={() => { setStatusTab('all'); setMeta({ ...meta, page: 1 }); }}
+            onClick={() => {
+              setStatusTab("all");
+              setMeta({ ...meta, page: 1 });
+            }}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              statusTab === 'all'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'hover:text-zinc-900'
+              statusTab === "all"
+                ? "bg-white text-zinc-900 shadow-xs"
+                : "hover:text-zinc-900"
             }`}
           >
-            Todos <span className="text-zinc-400 font-normal ml-0.5">{tabCounts.all}</span>
+            Todos{" "}
+            <span className="text-zinc-400 font-normal ml-0.5">
+              {tabCounts.all}
+            </span>
           </button>
 
           <button
             disabled={!!clubFilter}
             onClick={() => {
               if (clubFilter) return;
-              setStatusTab('free');
-              setClubFilter(''); // Reseta clube ao ir para livres
+              setStatusTab("free");
+              setClubFilter(""); // Reseta clube ao ir para livres
               setMeta({ ...meta, page: 1 });
             }}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
               clubFilter
-                ? 'opacity-40 cursor-not-allowed text-zinc-400'
-                : statusTab === 'free'
-                ? 'bg-white text-zinc-900 shadow-xs cursor-pointer'
-                : 'hover:text-zinc-900 cursor-pointer'
+                ? "opacity-40 cursor-not-allowed text-zinc-400"
+                : statusTab === "free"
+                  ? "bg-white text-zinc-900 shadow-xs cursor-pointer"
+                  : "hover:text-zinc-900 cursor-pointer"
             }`}
           >
-            Livres <span className="text-zinc-400 font-normal ml-0.5">{tabCounts.free}</span>
+            Livres{" "}
+            <span className="text-zinc-400 font-normal ml-0.5">
+              {tabCounts.free}
+            </span>
           </button>
 
           <button
-            onClick={() => { setStatusTab('club'); setMeta({ ...meta, page: 1 }); }}
+            onClick={() => {
+              setStatusTab("club");
+              setMeta({ ...meta, page: 1 });
+            }}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              statusTab === 'club'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'hover:text-zinc-900'
+              statusTab === "club"
+                ? "bg-white text-zinc-900 shadow-xs"
+                : "hover:text-zinc-900"
             }`}
           >
-            Em clubes <span className="text-zinc-400 font-normal ml-0.5">{tabCounts.club}</span>
+            Em clubes{" "}
+            <span className="text-zinc-400 font-normal ml-0.5">
+              {tabCounts.club}
+            </span>
           </button>
         </div>
 
@@ -680,31 +816,53 @@ export function PlayersPage() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "sort" ? null : "sort")
+            }
             className="h-8.5 px-3 bg-white border border-zinc-200 rounded-lg text-xs font-medium inline-flex items-center gap-1.5 text-zinc-700 hover:bg-zinc-50 cursor-pointer"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />
             <span>
-              Ordenar: {sortOption === 'name' ? 'nome' : sortOption === '-market_value' ? 'maior valor de mercado' : sortOption === 'market_value' ? 'menor valor de mercado' : sortOption === '-age' ? 'maior idade' : sortOption === 'age' ? 'menor idade' : sortOption === 'position' ? 'posição' : 'nome'}
+              Ordenar:{" "}
+              {sortOption === "name"
+                ? "nome"
+                : sortOption === "-market_value"
+                  ? "maior valor de mercado"
+                  : sortOption === "market_value"
+                    ? "menor valor de mercado"
+                    : sortOption === "-age"
+                      ? "maior idade"
+                      : sortOption === "age"
+                        ? "menor idade"
+                        : sortOption === "position"
+                          ? "posição"
+                          : "nome"}
             </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
-          {openDropdown === 'sort' && (
+          {openDropdown === "sort" && (
             <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-zinc-200 rounded-xl shadow-lg z-30 py-1 text-xs">
-              <div className="px-3 py-1.5 text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Ordenar por</div>
+              <div className="px-3 py-1.5 text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
+                Ordenar por
+              </div>
               {[
-                { label: 'Nome', val: 'name' },
-                { label: 'Maior valor de mercado', val: '-market_value' },
-                { label: 'Menor valor de mercado', val: 'market_value' },
-                { label: 'Maior idade', val: '-age' },
-                { label: 'Menor idade', val: 'age' },
-                { label: 'Posição (GOL a ATA)', val: 'position' },
+                { label: "Nome", val: "name" },
+                { label: "Maior valor de mercado", val: "-market_value" },
+                { label: "Menor valor de mercado", val: "market_value" },
+                { label: "Maior idade", val: "-age" },
+                { label: "Menor idade", val: "age" },
+                { label: "Posição (GOL a ATA)", val: "position" },
               ].map((s) => (
                 <button
                   key={s.val}
-                  onClick={() => { setSortOption(s.val); setOpenDropdown(null); }}
+                  onClick={() => {
+                    setSortOption(s.val);
+                    setOpenDropdown(null);
+                  }}
                   className={`w-full text-left px-3 py-1.5 hover:bg-zinc-50 font-medium ${
-                    sortOption === s.val ? 'text-[#155DFC] font-bold bg-blue-50/40' : 'text-zinc-800'
+                    sortOption === s.val
+                      ? "text-[#155DFC] font-bold bg-blue-50/40"
+                      : "text-zinc-800"
                   }`}
                 >
                   {s.label}
@@ -727,8 +885,12 @@ export function PlayersPage() {
                 <th className="py-3 px-3 font-semibold">Agilidade</th>
                 <th className="py-3 px-3 font-semibold text-center">Idade</th>
                 <th className="py-3 px-3 font-semibold">Condição</th>
-                <th className="py-3 px-3 font-semibold text-right">Valor base</th>
-                <th className="py-3 px-3 font-semibold text-right">Valor de mercado</th>
+                <th className="py-3 px-3 font-semibold text-right">
+                  Valor base
+                </th>
+                <th className="py-3 px-3 font-semibold text-right">
+                  Valor de mercado
+                </th>
                 <th className="py-3 px-3 font-semibold">Clube</th>
                 <th className="py-3 px-4 font-semibold text-right"></th>
               </tr>
@@ -741,7 +903,9 @@ export function PlayersPage() {
                     <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center mx-auto mb-3 text-zinc-400">
                       <AlertCircle className="w-6 h-6" />
                     </div>
-                    <h3 className="text-sm font-bold text-zinc-900 mb-1">Não foi possível carregar os jogadores</h3>
+                    <h3 className="text-sm font-bold text-zinc-900 mb-1">
+                      Não foi possível carregar os jogadores
+                    </h3>
                     <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-4 leading-relaxed">
                       {fetchError}
                     </p>
@@ -806,10 +970,13 @@ export function PlayersPage() {
                           <Search className="w-6 h-6" />
                         </div>
                         <h3 className="text-sm font-bold text-zinc-900">
-                          {debouncedSearch ? `Nenhum jogador encontrado para "${debouncedSearch}"` : 'Nenhum jogador encontrado'}
+                          {debouncedSearch
+                            ? `Nenhum jogador encontrado para "${debouncedSearch}"`
+                            : "Nenhum jogador encontrado"}
                         </h3>
                         <p className="text-xs text-zinc-500 leading-relaxed">
-                          Confira a grafia ou tire alguns filtros. A busca ignora maiúsculas, minúsculas e acentos.
+                          Confira a grafia ou tire alguns filtros. A busca
+                          ignora maiúsculas, minúsculas e acentos.
                         </p>
                         <button
                           onClick={clearAllFilters}
@@ -825,7 +992,9 @@ export function PlayersPage() {
                         <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center mx-auto text-zinc-400">
                           <Users className="w-6 h-6" />
                         </div>
-                        <h3 className="text-sm font-bold text-zinc-900">Nenhum jogador cadastrado</h3>
+                        <h3 className="text-sm font-bold text-zinc-900">
+                          Nenhum jogador cadastrado
+                        </h3>
                         <p className="text-xs text-zinc-500 leading-relaxed">
                           Com o banco recém-criado, a lista começa vazia.
                         </p>
@@ -844,13 +1013,19 @@ export function PlayersPage() {
                 players.map((player, idx) => {
                   const avatarColor = getInitialColors(idx);
                   return (
-                    <tr key={player.id} className="hover:bg-zinc-50/60 transition-colors">
+                    <tr
+                      key={player.id}
+                      className="hover:bg-zinc-50/60 transition-colors"
+                    >
                       {/* Avatar + Nome + Posição Extensa */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <div
                             className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0"
-                            style={{ backgroundColor: avatarColor.bg, color: avatarColor.text }}
+                            style={{
+                              backgroundColor: avatarColor.bg,
+                              color: avatarColor.text,
+                            }}
                           >
                             {getInitials(player.name)}
                           </div>
@@ -859,11 +1034,11 @@ export function PlayersPage() {
                               {player.name}
                             </span>
                             <span className="text-[11px] text-zinc-400 block leading-tight mt-0.5">
-                              {player.position === 'GOL' && 'Goleiro'}
-                              {player.position === 'ZAG' && 'Zagueiro'}
-                              {player.position === 'LAT' && 'Lateral'}
-                              {player.position === 'MEI' && 'Meio-campo'}
-                              {player.position === 'ATA' && 'Atacante'}
+                              {player.position === "GOL" && "Goleiro"}
+                              {player.position === "ZAG" && "Zagueiro"}
+                              {player.position === "LAT" && "Lateral"}
+                              {player.position === "MEI" && "Meio-campo"}
+                              {player.position === "ATA" && "Atacante"}
                             </span>
                           </div>
                         </div>
@@ -891,12 +1066,14 @@ export function PlayersPage() {
                             <div
                               className={`h-1.5 rounded-full ${
                                 player.agility >= 70
-                                  ? 'bg-[#008832]'
+                                  ? "bg-[#008832]"
                                   : player.agility >= 40
-                                  ? 'bg-zinc-500'
-                                  : 'bg-[#E4001B]'
+                                    ? "bg-zinc-500"
+                                    : "bg-[#E4001B]"
                               }`}
-                              style={{ width: `${Math.min(100, Math.max(0, player.agility))}%` }}
+                              style={{
+                                width: `${Math.min(100, Math.max(0, player.agility))}%`,
+                              }}
                             />
                           </div>
                         </div>
@@ -909,19 +1086,19 @@ export function PlayersPage() {
 
                       {/* Condição com Badge Semântico do Figma */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        {player.condition === 'APTO' && (
+                        {player.condition === "APTO" && (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#008832]" />
                             <span>Apto</span>
                           </span>
                         )}
-                        {player.condition === 'MAL_CONDICIONADO' && (
+                        {player.condition === "MAL_CONDICIONADO" && (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#B45309]" />
                             <span>Mal condicionado</span>
                           </span>
                         )}
-                        {player.condition === 'DOENTE' && (
+                        {player.condition === "DOENTE" && (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#E4001B]" />
                             <span>Doente</span>
@@ -944,14 +1121,16 @@ export function PlayersPage() {
                         {player.club_id && player.club_name ? (
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-[10px] font-bold text-zinc-400">
-                              {player.club_acronym || 'CLB'}
+                              {player.club_acronym || "CLB"}
                             </span>
                             <span className="text-zinc-800 underline decoration-zinc-300 font-medium hover:text-[#155DFC]">
                               {player.club_name}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-zinc-500 font-medium">Livre</span>
+                          <span className="text-zinc-500 font-medium">
+                            Livre
+                          </span>
                         )}
                       </td>
 
@@ -972,7 +1151,9 @@ export function PlayersPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setActionMenuOpenId((prev) => (prev === player.id ? null : player.id));
+                                setActionMenuOpenId((prev) =>
+                                  prev === player.id ? null : player.id,
+                                );
                               }}
                               className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
                             >
@@ -1033,8 +1214,10 @@ export function PlayersPage() {
         {/* PAGINAÇÃO INFERIOR (Fidelidade ao rodapé de J01) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 border-t border-zinc-100 bg-white text-xs text-zinc-500">
           <div>
-            Mostrando {players.length > 0 ? (meta.page - 1) * meta.limit + 1 : 0}–
-            {Math.min(meta.page * meta.limit, meta.total_items)} de {meta.total_items} jogadores
+            Mostrando{" "}
+            {players.length > 0 ? (meta.page - 1) * meta.limit + 1 : 0}–
+            {Math.min(meta.page * meta.limit, meta.total_items)} de{" "}
+            {meta.total_items} jogadores
           </div>
 
           <div className="flex items-center gap-1 font-medium">
@@ -1047,19 +1230,21 @@ export function PlayersPage() {
               <span>Anterior</span>
             </button>
 
-            {Array.from({ length: meta.total_pages }, (_, i) => i + 1).map((pNum) => (
-              <button
-                key={pNum}
-                onClick={() => setMeta({ ...meta, page: pNum })}
-                className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  meta.page === pNum
-                    ? 'bg-zinc-100 text-zinc-900'
-                    : 'text-zinc-600 hover:bg-zinc-50'
-                }`}
-              >
-                {pNum}
-              </button>
-            ))}
+            {Array.from({ length: meta.total_pages }, (_, i) => i + 1).map(
+              (pNum) => (
+                <button
+                  key={pNum}
+                  onClick={() => setMeta({ ...meta, page: pNum })}
+                  className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    meta.page === pNum
+                      ? "bg-zinc-100 text-zinc-900"
+                      : "text-zinc-600 hover:bg-zinc-50"
+                  }`}
+                >
+                  {pNum}
+                </button>
+              ),
+            )}
 
             <button
               disabled={meta.page >= meta.total_pages}
@@ -1085,7 +1270,11 @@ export function PlayersPage() {
         onSuccess={() => {
           fetchPlayers();
           fetchTabCounts();
-          showToast('success', 'Jogador cadastrado', 'O novo jogador foi adicionado à lista.');
+          showToast(
+            "success",
+            "Jogador cadastrado",
+            "O novo jogador foi adicionado à lista.",
+          );
         }}
       />
 
@@ -1100,9 +1289,9 @@ export function PlayersPage() {
             fetchPlayers();
             fetchTabCounts();
             showToast(
-              'success',
-              'Jogador Comprado!',
-              `${selectedPlayerForBuy.name} foi comprado com sucesso.`
+              "success",
+              "Jogador Comprado!",
+              `${selectedPlayerForBuy.name} foi comprado com sucesso.`,
             );
           }}
         />
@@ -1113,13 +1302,23 @@ export function PlayersPage() {
         <ConditionModal
           isOpen={!!selectedPlayerForCondition}
           onClose={() => setSelectedPlayerForCondition(null)}
-          onSuccess={(newMarketValue?: number, conditionLabel?: string, playerName?: string) => {
+          onSuccess={(
+            newMarketValue?: number,
+            conditionLabel?: string,
+            playerName?: string,
+          ) => {
             fetchPlayers();
-            const mv = newMarketValue !== undefined ? newMarketValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+            const mv =
+              newMarketValue !== undefined
+                ? newMarketValue.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : "";
             showToast(
-              'success',
-              'Condição alterada',
-              `${playerName ?? selectedPlayerForCondition?.name} agora está ${conditionLabel ?? 'com nova condição'}.${ mv ? ` Valor de mercado: ${mv}.` : ''}`
+              "success",
+              "Condição alterada",
+              `${playerName ?? selectedPlayerForCondition?.name} agora está ${conditionLabel ?? "com nova condição"}.${mv ? ` Valor de mercado: ${mv}.` : ""}`,
             );
           }}
           player={selectedPlayerForCondition}
@@ -1154,11 +1353,17 @@ export function PlayersPage() {
           >
             <CheckCircle2 className="w-4 h-4 text-[#008832] shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-zinc-900">{toast.title}</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{toast.message}</div>
+              <div className="text-xs font-bold text-zinc-900">
+                {toast.title}
+              </div>
+              <div className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                {toast.message}
+              </div>
             </div>
             <button
-              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              onClick={() =>
+                setToasts((prev) => prev.filter((t) => t.id !== toast.id))
+              }
               className="text-zinc-400 hover:text-zinc-600 ml-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
@@ -1183,13 +1388,18 @@ function DeleteConfirmModal({
   const [loading, setLoading] = useState(false);
 
   const getInitials = (name: string) => {
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2)
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
 
   const POSITION_LABELS: Record<string, string> = {
-    GOL: 'Goleiro', ZAG: 'Zagueiro', LAT: 'Lateral', MEI: 'Meio-campo', ATA: 'Atacante',
+    GOL: "Goleiro",
+    ZAG: "Zagueiro",
+    LAT: "Lateral",
+    MEI: "Meio-campo",
+    ATA: "Atacante",
   };
 
   async function handleConfirm() {
@@ -1202,9 +1412,12 @@ function DeleteConfirmModal({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-zinc-200 space-y-4">
         <div>
-          <h2 className="text-base font-bold text-zinc-900">Excluir {player.name}?</h2>
+          <h2 className="text-base font-bold text-zinc-900">
+            Excluir {player.name}?
+          </h2>
           <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-            O jogador sai da lista e da busca, mas as transações e as partidas antigas dele continuam como foram gravadas.
+            O jogador sai da lista e da busca, mas as transações e as partidas
+            antigas dele continuam como foram gravadas.
           </p>
         </div>
 
@@ -1215,9 +1428,13 @@ function DeleteConfirmModal({
               {getInitials(player.name)}
             </div>
             <div>
-              <div className="text-xs font-bold text-zinc-900">{player.name}</div>
+              <div className="text-xs font-bold text-zinc-900">
+                {player.name}
+              </div>
               <div className="text-[11px] text-zinc-400">
-                {player.position} · {POSITION_LABELS[player.position] ?? player.position} · {player.age} anos
+                {player.position} ·{" "}
+                {POSITION_LABELS[player.position] ?? player.position} ·{" "}
+                {player.age} anos
               </div>
             </div>
           </div>
@@ -1239,7 +1456,7 @@ function DeleteConfirmModal({
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            {loading ? 'Excluindo...' : 'Excluir jogador'}
+            {loading ? "Excluindo..." : "Excluir jogador"}
           </button>
         </div>
       </div>

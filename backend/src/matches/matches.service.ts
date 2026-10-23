@@ -28,7 +28,10 @@ export class MatchesService {
   /**
    * Helper privado para determinar qual atributo de ataque o jogador usa segundo sua posição (RN20)
    */
-  private getAttackingAttributeName(position: string): { name: string; key: string } {
+  private getAttackingAttributeName(position: string): {
+    name: string;
+    key: string;
+  } {
     if (position === 'ATA') return { name: 'finalização', key: 'shooting' };
     if (position === 'MEI') return { name: 'passe', key: 'passing' };
     return { name: 'drible', key: 'dribbling' }; // ZAG ou LAT
@@ -42,7 +45,9 @@ export class MatchesService {
 
     // 1. Validação de mandante igual a visitante (400)
     if (home_club_id === away_club_id) {
-      throw new BadRequestException('O clube mandante não pode ser igual ao clube visitante.');
+      throw new BadRequestException(
+        'O clube mandante não pode ser igual ao clube visitante.',
+      );
     }
 
     // 2. Verificar existência dos clubes e escalação completa (RN19/RN20)
@@ -55,11 +60,17 @@ export class MatchesService {
       );
     }
 
-    const homeClub = await this.prisma.clube.findUnique({ where: { id: home_club_id } });
-    const awayClub = await this.prisma.clube.findUnique({ where: { id: away_club_id } });
+    const homeClub = await this.prisma.clube.findUnique({
+      where: { id: home_club_id },
+    });
+    const awayClub = await this.prisma.clube.findUnique({
+      where: { id: away_club_id },
+    });
 
     if (!homeClub || !awayClub) {
-      throw new NotFoundException('Clube mandante ou visitante não encontrado.');
+      throw new NotFoundException(
+        'Clube mandante ou visitante não encontrado.',
+      );
     }
 
     const homePlayers = homeLineup.players;
@@ -68,13 +79,49 @@ export class MatchesService {
     // 3. Montar a estrutura dos 6 duelos determinísticos
     const duelConfigs = [
       // Duelos 1 a 3: Mandante ataca
-      { order: 1, attackerTeam: 'home', atkIdx: 4, defenderTeam: 'away', defIdx: 0 },
-      { order: 2, attackerTeam: 'home', atkIdx: 3, defenderTeam: 'away', defIdx: 1 },
-      { order: 3, attackerTeam: 'home', atkIdx: 2, defenderTeam: 'away', defIdx: 2 },
+      {
+        order: 1,
+        attackerTeam: 'home',
+        atkIdx: 4,
+        defenderTeam: 'away',
+        defIdx: 0,
+      },
+      {
+        order: 2,
+        attackerTeam: 'home',
+        atkIdx: 3,
+        defenderTeam: 'away',
+        defIdx: 1,
+      },
+      {
+        order: 3,
+        attackerTeam: 'home',
+        atkIdx: 2,
+        defenderTeam: 'away',
+        defIdx: 2,
+      },
       // Duelos 4 a 6: Visitante ataca
-      { order: 4, attackerTeam: 'away', atkIdx: 4, defenderTeam: 'home', defIdx: 0 },
-      { order: 5, attackerTeam: 'away', atkIdx: 3, defenderTeam: 'home', defIdx: 1 },
-      { order: 6, attackerTeam: 'away', atkIdx: 2, defenderTeam: 'home', defIdx: 2 },
+      {
+        order: 4,
+        attackerTeam: 'away',
+        atkIdx: 4,
+        defenderTeam: 'home',
+        defIdx: 0,
+      },
+      {
+        order: 5,
+        attackerTeam: 'away',
+        atkIdx: 3,
+        defenderTeam: 'home',
+        defIdx: 1,
+      },
+      {
+        order: 6,
+        attackerTeam: 'away',
+        atkIdx: 2,
+        defenderTeam: 'home',
+        defIdx: 2,
+      },
     ];
 
     let homeGoals = 0;
@@ -85,15 +132,25 @@ export class MatchesService {
       const isHomeAttacking = config.attackerTeam === 'home';
       const atkClub = isHomeAttacking ? homeClub : awayClub;
 
-      const attacker: any = isHomeAttacking ? homePlayers[config.atkIdx] : awayPlayers[config.atkIdx];
-      const defender: any = isHomeAttacking ? awayPlayers[config.defIdx] : homePlayers[config.defIdx];
+      const attacker: any = isHomeAttacking
+        ? homePlayers[config.atkIdx]
+        : awayPlayers[config.atkIdx];
+      const defender: any = isHomeAttacking
+        ? awayPlayers[config.defIdx]
+        : homePlayers[config.defIdx];
 
       const atkAttrInfo = this.getAttackingAttributeName(attacker.position);
       const rawAtkVal = attacker[atkAttrInfo.key];
-      const adjAtkVal = this.getAdjustedAttribute(rawAtkVal, attacker.condition);
+      const adjAtkVal = this.getAdjustedAttribute(
+        rawAtkVal,
+        attacker.condition,
+      );
 
       const rawDefVal = defender.defending;
-      const adjDefVal = this.getAdjustedAttribute(rawDefVal, defender.condition);
+      const adjDefVal = this.getAdjustedAttribute(
+        rawDefVal,
+        defender.condition,
+      );
 
       const isGoal = adjAtkVal > adjDefVal;
       if (isGoal) {
@@ -153,7 +210,9 @@ export class MatchesService {
    */
   async findAll(clubId?: number) {
     if (clubId) {
-      const clubExists = await this.prisma.clube.findUnique({ where: { id: clubId } });
+      const clubExists = await this.prisma.clube.findUnique({
+        where: { id: clubId },
+      });
       if (!clubExists) throw new NotFoundException('Clube não encontrado.');
     }
 
@@ -263,10 +322,13 @@ export class MatchesService {
     // Ordenar pelos 4 critérios de desempate do edital (RN21)
     standingsList.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
-      if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference;
+      if (b.goal_difference !== a.goal_difference)
+        return b.goal_difference - a.goal_difference;
       if (b.goals_for !== a.goals_for) return b.goals_for - a.goals_for;
 
-      const nameDiff = a.club_name.localeCompare(b.club_name, 'pt-BR', { sensitivity: 'base' });
+      const nameDiff = a.club_name.localeCompare(b.club_name, 'pt-BR', {
+        sensitivity: 'base',
+      });
       if (nameDiff !== 0) return nameDiff;
 
       return a.club_id - b.club_id;

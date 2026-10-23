@@ -1,4 +1,4 @@
-import { Player } from '../../players/types/player.types';
+import { Player } from "../../players/types/player.types";
 
 export interface Club {
   id: number;
@@ -28,4 +28,4 @@ export interface CreateClubDto {
   acronym: string;
 }
 
-export type ClubSortOption = 'name' | 'net_worth_desc' | 'net_worth_asc';
+export type ClubSortOption = "name" | "net_worth_desc" | "net_worth_asc";

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -7,22 +7,22 @@ import {
   Lock,
   ChevronDown,
   Activity,
-} from 'lucide-react';
-import { ClubDetail, ClubPlayer } from '../types/club.types';
-import { clubsService } from '../services/clubs.service';
+} from "lucide-react";
+import { ClubDetail, ClubPlayer } from "../types/club.types";
+import { clubsService } from "../services/clubs.service";
 
 interface ClubLineupTabProps {
   club: ClubDetail;
   onLineupSaved: (formation: string, startersCount: number) => void;
 }
 
-type Formation = '3-1' | '2-2' | '2-1-1' | '1-2-1';
+type Formation = "3-1" | "2-2" | "2-1-1" | "1-2-1";
 
 interface SlotDefinition {
   label: string;
   sublabel: string;
-  allowedPositions: ('GOL' | 'ZAG' | 'LAT' | 'MEI' | 'ATA')[];
-  role: 'gol' | 'def' | 'mei' | 'ata';
+  allowedPositions: ("GOL" | "ZAG" | "LAT" | "MEI" | "ATA")[];
+  role: "gol" | "def" | "mei" | "ata";
 }
 
 const FORMATIONS: {
@@ -32,58 +32,158 @@ const FORMATIONS: {
   slots: SlotDefinition[];
 }[] = [
   {
-    id: '3-1',
-    label: '3-1',
-    desc: 'Defesa 3, ataque 1',
+    id: "3-1",
+    label: "3-1",
+    desc: "Defesa 3, ataque 1",
     slots: [
-      { label: 'Goleiro', sublabel: 'GOL', allowedPositions: ['GOL'], role: 'gol' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Ataque', sublabel: 'ATA', allowedPositions: ['ATA'], role: 'ata' },
+      {
+        label: "Goleiro",
+        sublabel: "GOL",
+        allowedPositions: ["GOL"],
+        role: "gol",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Ataque",
+        sublabel: "ATA",
+        allowedPositions: ["ATA"],
+        role: "ata",
+      },
     ],
   },
   {
-    id: '2-2',
-    label: '2-2',
-    desc: 'Defesa 2, ataque 2',
+    id: "2-2",
+    label: "2-2",
+    desc: "Defesa 2, ataque 2",
     slots: [
-      { label: 'Goleiro', sublabel: 'GOL', allowedPositions: ['GOL'], role: 'gol' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Ataque', sublabel: 'ATA', allowedPositions: ['ATA'], role: 'ata' },
-      { label: 'Ataque', sublabel: 'ATA', allowedPositions: ['ATA'], role: 'ata' },
+      {
+        label: "Goleiro",
+        sublabel: "GOL",
+        allowedPositions: ["GOL"],
+        role: "gol",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Ataque",
+        sublabel: "ATA",
+        allowedPositions: ["ATA"],
+        role: "ata",
+      },
+      {
+        label: "Ataque",
+        sublabel: "ATA",
+        allowedPositions: ["ATA"],
+        role: "ata",
+      },
     ],
   },
   {
-    id: '2-1-1',
-    label: '2-1-1',
-    desc: 'Defesa 2, meio 1, ataque 1',
+    id: "2-1-1",
+    label: "2-1-1",
+    desc: "Defesa 2, meio 1, ataque 1",
     slots: [
-      { label: 'Goleiro', sublabel: 'GOL', allowedPositions: ['GOL'], role: 'gol' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Meio', sublabel: 'MEI', allowedPositions: ['MEI'], role: 'mei' },
-      { label: 'Ataque', sublabel: 'ATA', allowedPositions: ['ATA'], role: 'ata' },
+      {
+        label: "Goleiro",
+        sublabel: "GOL",
+        allowedPositions: ["GOL"],
+        role: "gol",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Meio",
+        sublabel: "MEI",
+        allowedPositions: ["MEI"],
+        role: "mei",
+      },
+      {
+        label: "Ataque",
+        sublabel: "ATA",
+        allowedPositions: ["ATA"],
+        role: "ata",
+      },
     ],
   },
   {
-    id: '1-2-1',
-    label: '1-2-1',
-    desc: 'Defesa 1, meio 2, ataque 1',
+    id: "1-2-1",
+    label: "1-2-1",
+    desc: "Defesa 1, meio 2, ataque 1",
     slots: [
-      { label: 'Goleiro', sublabel: 'GOL', allowedPositions: ['GOL'], role: 'gol' },
-      { label: 'Defesa', sublabel: 'ZAG ou LAT', allowedPositions: ['ZAG', 'LAT'], role: 'def' },
-      { label: 'Meio', sublabel: 'MEI', allowedPositions: ['MEI'], role: 'mei' },
-      { label: 'Meio', sublabel: 'MEI', allowedPositions: ['MEI'], role: 'mei' },
-      { label: 'Ataque', sublabel: 'ATA', allowedPositions: ['ATA'], role: 'ata' },
+      {
+        label: "Goleiro",
+        sublabel: "GOL",
+        allowedPositions: ["GOL"],
+        role: "gol",
+      },
+      {
+        label: "Defesa",
+        sublabel: "ZAG ou LAT",
+        allowedPositions: ["ZAG", "LAT"],
+        role: "def",
+      },
+      {
+        label: "Meio",
+        sublabel: "MEI",
+        allowedPositions: ["MEI"],
+        role: "mei",
+      },
+      {
+        label: "Meio",
+        sublabel: "MEI",
+        allowedPositions: ["MEI"],
+        role: "mei",
+      },
+      {
+        label: "Ataque",
+        sublabel: "ATA",
+        allowedPositions: ["ATA"],
+        role: "ata",
+      },
     ],
   },
 ];
 
 function getPlayerInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
+  if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
@@ -94,8 +194,10 @@ function getPlayerLastName(name: string) {
 }
 
 export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
-  const [formation, setFormation] = useState<Formation>('2-1-1');
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState<(number | null)[]>([null, null, null, null, null]);
+  const [formation, setFormation] = useState<Formation>("2-1-1");
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<(number | null)[]>(
+    [null, null, null, null, null],
+  );
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -118,7 +220,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
           const form = res.formation as Formation;
           setFormation(form);
           setSavedFormation(form);
-          const formDef = FORMATIONS.find((f) => f.id === form) || FORMATIONS[2];
+          const formDef =
+            FORMATIONS.find((f) => f.id === form) || FORMATIONS[2];
           const newSlots: (number | null)[] = [null, null, null, null, null];
 
           // Distribuir os jogadores retornados nas vagas correspondentes
@@ -128,7 +231,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
 
           formDef.slots.forEach((slot, slotIndex) => {
             const match = returnedPlayers.find(
-              (p) => !usedIds.has(p.id) && slot.allowedPositions.includes(p.position)
+              (p) =>
+                !usedIds.has(p.id) &&
+                slot.allowedPositions.includes(p.position),
             );
             if (match) {
               newSlots[slotIndex] = match.id;
@@ -153,7 +258,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
   }, [club.id]);
 
   function autoFillSlots(targetFormation: Formation) {
-    const formDef = FORMATIONS.find((f) => f.id === targetFormation) || FORMATIONS[2];
+    const formDef =
+      FORMATIONS.find((f) => f.id === targetFormation) || FORMATIONS[2];
     const newSlots: (number | null)[] = [null, null, null, null, null];
     const usedIds = new Set<number>();
 
@@ -161,8 +267,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
       const match = club.players.find(
         (p) =>
           !usedIds.has(p.id) &&
-          p.condition !== 'DOENTE' &&
-          slot.allowedPositions.includes(p.position)
+          p.condition !== "DOENTE" &&
+          slot.allowedPositions.includes(p.position),
       );
       if (match) {
         newSlots[slotIdx] = match.id;
@@ -190,7 +296,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
 
   // Identificar jogadores escalados e reservas
   const starterPlayers = useMemo(() => {
-    return selectedPlayerIds.map((id) => (id ? club.players.find((p) => p.id === id) || null : null));
+    return selectedPlayerIds.map((id) =>
+      id ? club.players.find((p) => p.id === id) || null : null,
+    );
   }, [selectedPlayerIds, club.players]);
 
   const starterIdsSet = useMemo(() => {
@@ -201,71 +309,82 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
     return club.players.filter((p) => !starterIdsSet.has(p.id));
   }, [club.players, starterIdsSet]);
 
-  const isComplete = selectedPlayerIds.every((id) => id !== null) && selectedPlayerIds.length === 5;
+  const isComplete =
+    selectedPlayerIds.every((id) => id !== null) &&
+    selectedPlayerIds.length === 5;
 
   // Jogadores mal condicionados entre os titulares (C06 / C10)
   const illConditionedStarters = useMemo(() => {
-    return starterPlayers.filter((p): p is ClubPlayer => p !== null && p.condition === 'MAL_CONDICIONADO');
+    return starterPlayers.filter(
+      (p): p is ClubPlayer => p !== null && p.condition === "MAL_CONDICIONADO",
+    );
   }, [starterPlayers]);
 
   const hasSickStarter = useMemo(() => {
-    return starterPlayers.some((p) => p && p.condition === 'DOENTE');
+    return starterPlayers.some((p) => p && p.condition === "DOENTE");
   }, [starterPlayers]);
 
   async function handleSave() {
     setErrorMessage(null);
 
     if (!isComplete) {
-      setErrorMessage('A escalação precisa ter exatamente 5 titulares selecionados.');
+      setErrorMessage(
+        "A escalação precisa ter exatamente 5 titulares selecionados.",
+      );
       return;
     }
 
-    const playerIds = selectedPlayerIds.filter((id): id is number => id !== null);
+    const playerIds = selectedPlayerIds.filter(
+      (id): id is number => id !== null,
+    );
 
     try {
       setSaving(true);
       await clubsService.updateLineup(club.id, formation, playerIds);
       onLineupSaved(formation, 5);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'A escalação foi recusada.';
-      setErrorMessage(Array.isArray(msg) ? msg.join(' | ') : msg);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "A escalação foi recusada.";
+      setErrorMessage(Array.isArray(msg) ? msg.join(" | ") : msg);
     } finally {
       setSaving(false);
     }
   }
 
   function getUsedAttributes(player: ClubPlayer) {
-    if (player.position === 'GOL') {
+    if (player.position === "GOL") {
       return `Defesa ${player.defending}`;
     }
-    if (player.position === 'ZAG') {
+    if (player.position === "ZAG") {
       return `Defesa ${player.defending}`;
     }
-    if (player.position === 'LAT') {
+    if (player.position === "LAT") {
       return `Drible ${player.dribbling} Defesa ${player.defending}`;
     }
-    if (player.position === 'MEI') {
+    if (player.position === "MEI") {
       return `Passe ${player.passing}`;
     }
-    if (player.position === 'ATA') {
+    if (player.position === "ATA") {
       return `Finalização ${player.shooting}`;
     }
-    return '';
+    return "";
   }
 
   // Diagnóstico para o alerta de escalação incompleta (C07 / C11)
   const incompleteDetails = useMemo(() => {
-    const sickList = club.players.filter((p) => p.condition === 'DOENTE');
+    const sickList = club.players.filter((p) => p.condition === "DOENTE");
     const fitOutfield = club.players.filter(
-      (p) => p.position !== 'GOL' && p.condition !== 'DOENTE'
+      (p) => p.position !== "GOL" && p.condition !== "DOENTE",
     );
     const hasSoldStarter = savedFormation && savedStartersCount < 5;
 
     if (hasSoldStarter) {
       const sickStr =
         sickList.length > 0
-          ? `Com o ${sickList.map((p) => p.name).join(' e ')} DOENTE, `
-          : '';
+          ? `Com o ${sickList.map((p) => p.name).join(" e ")} DOENTE, `
+          : "";
       return {
         title: `Escalação incompleta: o ${club.name} não pode jogar partidas`,
         desc: `Um titular anterior saiu da escalação: a ${formation} continua salva, com ${savedStartersCount} titulares. ${sickStr}sobram ${fitOutfield.length} jogadores de linha que podem ser escalados, e nenhuma formação fecha: o clube precisa comprar um jogador e escalar de novo.`,
@@ -289,7 +408,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
             <div>
               <h3 className="text-sm font-bold text-zinc-900">Titulares</h3>
               <p className="text-[11px] text-zinc-400 mt-0.5">
-                1 goleiro e 4 jogadores de linha, na formação escolhida. Salvar troca os 5 de uma vez.
+                1 goleiro e 4 jogadores de linha, na formação escolhida. Salvar
+                troca os 5 de uma vez.
               </p>
             </div>
             {isComplete ? (
@@ -311,7 +431,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-amber-800 leading-relaxed">
                 <span className="font-bold">{incompleteDetails.title}</span>
-                <p className="mt-0.5 text-amber-700">{incompleteDetails.desc}</p>
+                <p className="mt-0.5 text-amber-700">
+                  {incompleteDetails.desc}
+                </p>
               </div>
             </div>
           )}
@@ -321,7 +443,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
             <div className="p-3.5 bg-red-50/90 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <div className="font-bold text-red-800">A escalação foi recusada</div>
+                <div className="font-bold text-red-800">
+                  A escalação foi recusada
+                </div>
                 <div className="mt-0.5 text-red-600">{errorMessage}</div>
               </div>
             </div>
@@ -329,9 +453,12 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
 
           {/* Seletor de Formações (C06 / C07) */}
           <div>
-            <label className="text-xs font-bold text-zinc-800 block mb-1">Formação</label>
+            <label className="text-xs font-bold text-zinc-800 block mb-1">
+              Formação
+            </label>
             <p className="text-[11px] text-zinc-400 mb-3">
-              Os números contam os jogadores de linha de trás para frente. O goleiro fica fora da conta.
+              Os números contam os jogadores de linha de trás para frente. O
+              goleiro fica fora da conta.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {FORMATIONS.map((f) => {
@@ -343,8 +470,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                     onClick={() => handleFormationChange(f.id)}
                     className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-[#155DFC] bg-blue-50/40 ring-1 ring-[#155DFC]/30'
-                        : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                        ? "border-[#155DFC] bg-blue-50/40 ring-1 ring-[#155DFC]/30"
+                        : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                     }`}
                   >
                     {/* Mini campinho icônico */}
@@ -359,15 +486,21 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                         <span
                           className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? 'border-[#155DFC] bg-[#155DFC]'
-                              : 'border-zinc-300 bg-white'
+                              ? "border-[#155DFC] bg-[#155DFC]"
+                              : "border-zinc-300 bg-white"
                           }`}
                         >
-                          {isSelected && <span className="w-1 h-1 rounded-full bg-white" />}
+                          {isSelected && (
+                            <span className="w-1 h-1 rounded-full bg-white" />
+                          )}
                         </span>
-                        <span className="text-xs font-bold text-zinc-900">{f.label}</span>
+                        <span className="text-xs font-bold text-zinc-900">
+                          {f.label}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">{f.desc}</span>
+                      <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">
+                        {f.desc}
+                      </span>
                     </div>
                   </button>
                 );
@@ -384,7 +517,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                   <th className="text-left py-2 font-medium">Titular</th>
                   <th className="text-left py-2 font-medium">Condição</th>
                   <th className="text-center py-2 font-medium">Overall</th>
-                  <th className="text-left py-2 font-medium">Atributos usados</th>
+                  <th className="text-left py-2 font-medium">
+                    Atributos usados
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -396,35 +531,45 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
 
                   // Jogadores disponíveis para esta vaga
                   const availableForSlot = club.players.filter((p) => {
-                    if (!slot.allowedPositions.includes(p.position)) return false;
+                    if (!slot.allowedPositions.includes(p.position))
+                      return false;
                     // Se já estiver selecionado em outro slot, não permite duplicar
                     const usedInOtherSlot = selectedPlayerIds.some(
-                      (id, i) => i !== slotIdx && id === p.id
+                      (id, i) => i !== slotIdx && id === p.id,
                     );
                     return !usedInOtherSlot;
                   });
 
                   return (
-                    <tr key={slotIdx} className="hover:bg-zinc-50/60 transition-colors">
+                    <tr
+                      key={slotIdx}
+                      className="hover:bg-zinc-50/60 transition-colors"
+                    >
                       {/* Vaga */}
                       <td className="py-2.5 pr-2">
-                        <div className="font-bold text-zinc-900">{slot.label}</div>
-                        <div className="text-[10px] text-zinc-400 font-mono">{slot.sublabel}</div>
+                        <div className="font-bold text-zinc-900">
+                          {slot.label}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-mono">
+                          {slot.sublabel}
+                        </div>
                       </td>
 
                       {/* Select do Titular */}
                       <td className="py-2.5 pr-3">
                         <div className="relative min-w-[190px]">
                           <select
-                            value={selectedId ?? ''}
+                            value={selectedId ?? ""}
                             onChange={(e) => {
-                              const val = e.target.value ? Number(e.target.value) : null;
+                              const val = e.target.value
+                                ? Number(e.target.value)
+                                : null;
                               handleSelectPlayer(slotIdx, val);
                             }}
                             className={`w-full h-8 pl-2.5 pr-7 bg-white border rounded-lg text-xs font-semibold appearance-none focus:outline-none cursor-pointer ${
                               !selectedId
-                                ? 'border-amber-300 text-zinc-400 bg-amber-50/30'
-                                : 'border-zinc-200 text-zinc-800'
+                                ? "border-amber-300 text-zinc-400 bg-amber-50/30"
+                                : "border-zinc-200 text-zinc-800"
                             }`}
                           >
                             <option value="">
@@ -436,9 +581,10 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                               <option
                                 key={p.id}
                                 value={p.id}
-                                disabled={p.condition === 'DOENTE'}
+                                disabled={p.condition === "DOENTE"}
                               >
-                                {p.name} ({p.position}) {p.condition === 'DOENTE' ? '· Doente 🔒' : ''}
+                                {p.name} ({p.position}){" "}
+                                {p.condition === "DOENTE" ? "· Doente 🔒" : ""}
                               </option>
                             ))}
                           </select>
@@ -449,12 +595,13 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                       {/* Condição */}
                       <td className="py-2.5 pr-2">
                         {selectedPlayer ? (
-                          selectedPlayer.condition === 'APTO' ? (
+                          selectedPlayer.condition === "APTO" ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               Apto
                             </span>
-                          ) : selectedPlayer.condition === 'MAL_CONDICIONADO' ? (
+                          ) : selectedPlayer.condition ===
+                            "MAL_CONDICIONADO" ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                               Mal condicionado
@@ -472,12 +619,14 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
 
                       {/* Overall */}
                       <td className="py-2.5 px-2 text-center font-bold text-zinc-800">
-                        {selectedPlayer ? selectedPlayer.overall : '-'}
+                        {selectedPlayer ? selectedPlayer.overall : "-"}
                       </td>
 
                       {/* Atributos Usados */}
                       <td className="py-2.5 pl-2 text-zinc-600 font-medium">
-                        {selectedPlayer ? getUsedAttributes(selectedPlayer) : '-'}
+                        {selectedPlayer
+                          ? getUsedAttributes(selectedPlayer)
+                          : "-"}
                       </td>
                     </tr>
                   );
@@ -492,11 +641,14 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">
-                  {illConditionedStarters.map((p) => p.name).join(' e ')}{' '}
-                  {illConditionedStarters.length > 1 ? 'estão mal condicionados' : 'está mal condicionado'}
+                  {illConditionedStarters.map((p) => p.name).join(" e ")}{" "}
+                  {illConditionedStarters.length > 1
+                    ? "estão mal condicionados"
+                    : "está mal condicionado"}
                 </span>
                 <p className="mt-0.5 text-amber-700">
-                  Podem jogar, mas cada atributo vale 15% a menos durante a partida.
+                  Podem jogar, mas cada atributo vale 15% a menos durante a
+                  partida.
                 </p>
               </div>
             </div>
@@ -505,7 +657,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
           {/* Rodapé e Botões de Ação */}
           <div className="pt-3 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-[11px] text-zinc-400 max-w-sm leading-relaxed">
-              A escalação vale até ser trocada. Titular vendido ou que fica doente sai dela, e o clube só volta a jogar depois de escalar de novo.
+              A escalação vale até ser trocada. Titular vendido ou que fica
+              doente sai dela, e o clube só volta a jogar depois de escalar de
+              novo.
             </p>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -521,7 +675,7 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                 disabled={saving || !isComplete || hasSickStarter}
                 className="px-5 py-2 text-xs font-semibold text-white bg-[#155DFC] hover:bg-[#1447E6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-xs transition-colors cursor-pointer"
               >
-                {saving ? 'Salvando...' : 'Salvar escalação'}
+                {saving ? "Salvando..." : "Salvar escalação"}
               </button>
             </div>
           </div>
@@ -536,8 +690,8 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
               {savedFormation && !isComplete
                 ? `Prévia da formação ${formation} salva; a vaga vazia fica tracejada.`
                 : !isComplete
-                ? `Prévia da formação ${formation}; as vagas vazias ficam tracejadas.`
-                : `Prévia da formação ${formation}, do goleiro ao ataque.`}
+                  ? `Prévia da formação ${formation}; as vagas vazias ficam tracejadas.`
+                  : `Prévia da formação ${formation}, do goleiro ao ataque.`}
             </p>
 
             {/* Campinho Tático Fiel ao Figma */}
@@ -578,40 +732,72 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
               {/* Ataque (Topo) */}
               <div className="relative z-10 flex justify-center items-center gap-10 pt-3">
                 {currentFormationDef.slots
-                  .map((slot, idx) => ({ slot, idx, player: starterPlayers[idx] }))
-                  .filter((s) => s.slot.role === 'ata')
+                  .map((slot, idx) => ({
+                    slot,
+                    idx,
+                    player: starterPlayers[idx],
+                  }))
+                  .filter((s) => s.slot.role === "ata")
                   .map(({ idx, player }) => (
-                    <PlayerOnPitch key={idx} player={player} defaultLabel="Ataque" />
+                    <PlayerOnPitch
+                      key={idx}
+                      player={player}
+                      defaultLabel="Ataque"
+                    />
                   ))}
               </div>
 
               {/* Meio (Centro) */}
               <div className="relative z-10 flex justify-center items-center gap-10">
                 {currentFormationDef.slots
-                  .map((slot, idx) => ({ slot, idx, player: starterPlayers[idx] }))
-                  .filter((s) => s.slot.role === 'mei')
+                  .map((slot, idx) => ({
+                    slot,
+                    idx,
+                    player: starterPlayers[idx],
+                  }))
+                  .filter((s) => s.slot.role === "mei")
                   .map(({ idx, player }) => (
-                    <PlayerOnPitch key={idx} player={player} defaultLabel="Meio" />
+                    <PlayerOnPitch
+                      key={idx}
+                      player={player}
+                      defaultLabel="Meio"
+                    />
                   ))}
               </div>
 
               {/* Defesa */}
               <div className="relative z-10 flex justify-center items-center gap-14">
                 {currentFormationDef.slots
-                  .map((slot, idx) => ({ slot, idx, player: starterPlayers[idx] }))
-                  .filter((s) => s.slot.role === 'def')
+                  .map((slot, idx) => ({
+                    slot,
+                    idx,
+                    player: starterPlayers[idx],
+                  }))
+                  .filter((s) => s.slot.role === "def")
                   .map(({ idx, player }) => (
-                    <PlayerOnPitch key={idx} player={player} defaultLabel="Defesa" />
+                    <PlayerOnPitch
+                      key={idx}
+                      player={player}
+                      defaultLabel="Defesa"
+                    />
                   ))}
               </div>
 
               {/* Goleiro (Base) */}
               <div className="relative z-10 flex justify-center items-center pb-2">
                 {currentFormationDef.slots
-                  .map((slot, idx) => ({ slot, idx, player: starterPlayers[idx] }))
-                  .filter((s) => s.slot.role === 'gol')
+                  .map((slot, idx) => ({
+                    slot,
+                    idx,
+                    player: starterPlayers[idx],
+                  }))
+                  .filter((s) => s.slot.role === "gol")
                   .map(({ idx, player }) => (
-                    <PlayerOnPitch key={idx} player={player} defaultLabel="Goleiro" />
+                    <PlayerOnPitch
+                      key={idx}
+                      player={player}
+                      defaultLabel="Goleiro"
+                    />
                   ))}
               </div>
             </div>
@@ -620,7 +806,9 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
             <div className="flex items-start gap-2 pt-3 mt-3 border-t border-zinc-100 text-[11px] text-zinc-500">
               <Swords className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                Na partida, atacam os 3 jogadores de linha mais avançados e defendem o goleiro e os 2 mais recuados. É gol quando o ataque é maior que a defesa.
+                Na partida, atacam os 3 jogadores de linha mais avançados e
+                defendem o goleiro e os 2 mais recuados. É gol quando o ataque é
+                maior que a defesa.
               </p>
             </div>
           </div>
@@ -628,11 +816,14 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
           {/* Card Reservas (C06 / C07) */}
           <div className="bg-white border border-zinc-200/90 rounded-2xl p-4 shadow-2xs">
             <h4 className="text-xs font-bold text-zinc-900">Reservas</h4>
-            <p className="text-[11px] text-zinc-400 mb-3">Jogadores do elenco fora da escalação.</p>
+            <p className="text-[11px] text-zinc-400 mb-3">
+              Jogadores do elenco fora da escalação.
+            </p>
 
             {reservePlayers.length === 0 ? (
               <p className="text-[11px] text-zinc-400 py-3 text-center">
-                Nenhum reserva: os {club.players.length} jogadores do elenco estão escolhidos.
+                Nenhum reserva: os {club.players.length} jogadores do elenco
+                estão escolhidos.
               </p>
             ) : (
               <div className="space-y-2">
@@ -649,16 +840,20 @@ export function ClubLineupTab({ club, onLineupSaved }: ClubLineupTabProps) {
                         <div className="font-semibold text-zinc-800 truncate max-w-[120px]">
                           {res.name}
                         </div>
-                        <div className="text-[10px] text-zinc-400">{res.position}</div>
+                        <div className="text-[10px] text-zinc-400">
+                          {res.position}
+                        </div>
                       </div>
                     </div>
-                    {res.condition === 'DOENTE' ? (
+                    {res.condition === "DOENTE" ? (
                       <span className="inline-flex items-center gap-1 text-[10px] text-red-600 font-medium">
                         <Lock className="w-3 h-3 text-red-500" />
                         Doente
                       </span>
                     ) : (
-                      <span className="text-[10px] text-zinc-500">{res.condition}</span>
+                      <span className="text-[10px] text-zinc-500">
+                        {res.condition}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -694,7 +889,7 @@ function PlayerOnPitch({
 
   const initials = getPlayerInitials(player.name);
   const lastName = getPlayerLastName(player.name);
-  const isMal = player.condition === 'MAL_CONDICIONADO';
+  const isMal = player.condition === "MAL_CONDICIONADO";
 
   return (
     <div className="flex flex-col items-center relative group">

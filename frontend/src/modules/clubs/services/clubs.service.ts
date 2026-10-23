@@ -1,9 +1,14 @@
-import { api } from '../../../services/api';
-import { Club, ClubDetail, CreateClubDto, ClubSortOption } from '../types/club.types';
+import { api } from "../../../services/api";
+import {
+  Club,
+  ClubDetail,
+  CreateClubDto,
+  ClubSortOption,
+} from "../types/club.types";
 
 export const clubsService = {
   async getClubs(sort?: ClubSortOption): Promise<Club[]> {
-    const res = await api.get('/clubs', { params: { sort } });
+    const res = await api.get("/clubs", { params: { sort } });
     return Array.isArray(res.data) ? res.data : res.data?.data || [];
   },
 
@@ -13,7 +18,7 @@ export const clubsService = {
   },
 
   async createClub(dto: CreateClubDto): Promise<Club> {
-    const res = await api.post('/clubs', dto);
+    const res = await api.post("/clubs", dto);
     return res.data;
   },
 
@@ -30,17 +35,23 @@ export const clubsService = {
     return res.data;
   },
 
-  async getTransactions(clubId: number, type?: 'COMPRA' | 'VENDA', playerId?: number) {
+  async getTransactions(
+    clubId: number,
+    filters?: { type?: "COMPRA" | "VENDA"; player_id?: number },
+  ) {
     const res = await api.get(`/clubs/${clubId}/transactions`, {
-      params: { type, player_id: playerId },
+      params: filters,
     });
     return res.data;
   },
 
-  async exportTransactionsCsv(clubId: number, type?: 'COMPRA' | 'VENDA', playerId?: number) {
+  async exportTransactionsCsv(
+    clubId: number,
+    filters?: { type?: "COMPRA" | "VENDA"; player_id?: number },
+  ) {
     const res = await api.get(`/clubs/${clubId}/transactions/export`, {
-      params: { type, player_id: playerId },
-      responseType: 'blob',
+      params: filters,
+      responseType: "blob",
     });
     return res.data;
   },

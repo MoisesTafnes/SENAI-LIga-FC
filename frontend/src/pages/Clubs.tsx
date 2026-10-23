@@ -1,1 +1,1 @@
-export { ClubsPage as Clubs } from '../modules/clubs/pages/ClubsPage';
+export { ClubsPage as Clubs } from "../modules/clubs/pages/ClubsPage";

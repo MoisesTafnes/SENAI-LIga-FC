@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { 
-  Users, 
-  Shield, 
-  Swords, 
-  ListOrdered, 
-  Plus, 
-  Trophy, 
-  Clock, 
-  RotateCw, 
+import { useState, useEffect } from "react";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
+import {
+  Users,
+  Shield,
+  Swords,
+  ListOrdered,
+  Plus,
+  Trophy,
+  Clock,
+  RotateCw,
   PanelLeft,
-  ChevronRight
-} from 'lucide-react';
-import { api } from '../services/api';
+  ChevronRight,
+} from "lucide-react";
+import { leagueService } from "../services/league.service";
 
 export function AppLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -22,7 +22,7 @@ export function AppLayout() {
     totalPlayers: 0,
     totalClubs: 0,
     totalMatches: 0,
-    lastMatch: 'Sem partidas cadastradas',
+    lastMatch: "Sem partidas cadastradas",
   });
 
   const [clubs, setClubs] = useState<any[]>([]);
@@ -31,26 +31,29 @@ export function AppLayout() {
     async function fetchSidebarData() {
       try {
         const [playersRes, clubsRes, matchesRes] = await Promise.allSettled([
-          api.get('/players?limit=100'),
-          api.get('/clubs'),
-          api.get('/matches'),
+          leagueService.getPlayers(),
+          leagueService.getClubs(),
+          leagueService.getMatches(),
         ]);
 
         let playerTotal = 0;
-        if (playersRes.status === 'fulfilled') {
+        if (playersRes.status === "fulfilled") {
           const pData = playersRes.value.data;
-          playerTotal = pData?.meta?.total_items || pData?.data?.length || (Array.isArray(pData) ? pData.length : 0);
+          playerTotal =
+            pData?.meta?.total_items ||
+            pData?.data?.length ||
+            (Array.isArray(pData) ? pData.length : 0);
         }
 
         let clubList: any[] = [];
-        if (clubsRes.status === 'fulfilled') {
+        if (clubsRes.status === "fulfilled") {
           const cData = clubsRes.value.data;
           clubList = Array.isArray(cData) ? cData : cData?.data || [];
         }
 
         let matchTotal = 0;
-        let lastMatchStr = 'Sem partidas cadastradas';
-        if (matchesRes.status === 'fulfilled') {
+        let lastMatchStr = "Sem partidas cadastradas";
+        if (matchesRes.status === "fulfilled") {
           const mData = matchesRes.value.data;
           const mList = Array.isArray(mData) ? mData : mData?.data || [];
           matchTotal = mList.length;
@@ -76,15 +79,15 @@ export function AppLayout() {
             id: c.id,
             name: c.name,
             acronym: c.acronym,
-            letter: c.name ? c.name.charAt(0).toUpperCase() : 'C',
-          }))
+            letter: c.name ? c.name.charAt(0).toUpperCase() : "C",
+          })),
         );
       } catch {
         setMetrics({
           totalPlayers: 0,
           totalClubs: 0,
           totalMatches: 0,
-          lastMatch: 'Sem partidas cadastradas',
+          lastMatch: "Sem partidas cadastradas",
         });
         setClubs([]);
       }
@@ -93,31 +96,42 @@ export function AppLayout() {
     fetchSidebarData();
   }, []);
 
-  const getBreadcrumb = (): { category: string; page: string; subpage?: string } => {
+  const getBreadcrumb = (): {
+    category: string;
+    page: string;
+    subpage?: string;
+  } => {
     const path = location.pathname;
-    if (path.startsWith('/players')) return { category: 'Mercado', page: 'Jogadores' };
-    if (path.startsWith('/clubs')) {
+    if (path.startsWith("/players"))
+      return { category: "Mercado", page: "Jogadores" };
+    if (path.startsWith("/clubs")) {
       const match = path.match(/^\/clubs\/(\d+)/);
       if (match) {
         const found = clubs.find((c) => String(c.id) === match[1]);
         return {
-          category: 'Mercado',
-          page: 'Clubes',
-          subpage: found ? found.name : 'Detalhes',
+          category: "Mercado",
+          page: "Clubes",
+          subpage: found ? found.name : "Detalhes",
         };
       }
-      return { category: 'Mercado', page: 'Clubes' };
+      return { category: "Mercado", page: "Clubes" };
     }
-    if (path.startsWith('/market')) return { category: 'Mercado', page: 'Comprar e Vender' };
-    if (path.startsWith('/matches')) {
+    if (path.startsWith("/market"))
+      return { category: "Mercado", page: "Comprar e Vender" };
+    if (path.startsWith("/matches")) {
       const matchId = path.match(/^\/matches\/(\d+)/);
       if (matchId) {
-        return { category: 'Liga', page: 'Partidas', subpage: `Partida #${matchId[1]}` };
+        return {
+          category: "Liga",
+          page: "Partidas",
+          subpage: `Partida #${matchId[1]}`,
+        };
       }
-      return { category: 'Liga', page: 'Partidas' };
+      return { category: "Liga", page: "Partidas" };
     }
-    if (path.startsWith('/standings')) return { category: 'Liga', page: 'Classificação' };
-    return { category: 'Passe', page: 'Início' };
+    if (path.startsWith("/standings"))
+      return { category: "Liga", page: "Classificação" };
+    return { category: "Passe", page: "Início" };
   };
 
   const breadcrumb = getBreadcrumb();
@@ -127,7 +141,7 @@ export function AppLayout() {
       {/* SIDEBAR DO FIGMA */}
       <aside
         className={`fixed top-0 bottom-0 left-0 z-40 bg-white border-r border-zinc-200 flex flex-col justify-between transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? "w-20" : "w-64"
         }`}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
@@ -163,11 +177,11 @@ export function AppLayout() {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                    } ${isCollapsed ? 'justify-center px-0' : ''}`
+                        ? "border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                    } ${isCollapsed ? "justify-center px-0" : ""}`
                   }
-                  title={isCollapsed ? 'Jogadores' : undefined}
+                  title={isCollapsed ? "Jogadores" : undefined}
                 >
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -185,11 +199,11 @@ export function AppLayout() {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                    } ${isCollapsed ? 'justify-center px-0' : ''}`
+                        ? "border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                    } ${isCollapsed ? "justify-center px-0" : ""}`
                   }
-                  title={isCollapsed ? 'Clubes' : undefined}
+                  title={isCollapsed ? "Clubes" : undefined}
                 >
                   <div className="flex items-center gap-2.5">
                     <Shield className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -217,11 +231,11 @@ export function AppLayout() {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                    } ${isCollapsed ? 'justify-center px-0' : ''}`
+                        ? "border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                    } ${isCollapsed ? "justify-center px-0" : ""}`
                   }
-                  title={isCollapsed ? 'Partidas' : undefined}
+                  title={isCollapsed ? "Partidas" : undefined}
                 >
                   <div className="flex items-center gap-2.5">
                     <Swords className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -239,11 +253,11 @@ export function AppLayout() {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                    } ${isCollapsed ? 'justify-center px-0' : ''}`
+                        ? "border border-zinc-200/80 bg-white text-zinc-900 shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                    } ${isCollapsed ? "justify-center px-0" : ""}`
                   }
-                  title={isCollapsed ? 'Classificação' : undefined}
+                  title={isCollapsed ? "Classificação" : undefined}
                 >
                   <div className="flex items-center gap-2.5">
                     <ListOrdered className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -260,7 +274,10 @@ export function AppLayout() {
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                     Clubes
                   </span>
-                  <NavLink to="/clubs" className="text-zinc-400 hover:text-zinc-700">
+                  <NavLink
+                    to="/clubs"
+                    className="text-zinc-400 hover:text-zinc-700"
+                  >
                     <Plus className="w-3.5 h-3.5" />
                   </NavLink>
                 </div>
@@ -271,34 +288,34 @@ export function AppLayout() {
                     </div>
                   ) : (
                     clubs.map((c) => (
-                    <NavLink
-                      key={c.id}
-                      to={`/clubs/${c.id}`}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                          isActive
-                            ? 'bg-white border border-zinc-200/90 text-zinc-900 shadow-2xs font-semibold'
-                            : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <span
-                            className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 font-mono transition-colors ${
-                              isActive
-                                ? 'bg-[#155DFC] text-white shadow-2xs'
-                                : 'bg-zinc-100 border border-zinc-200/60 text-zinc-600'
-                            }`}
-                          >
-                            {c.letter}
-                          </span>
-                          <span className="truncate">{c.name}</span>
-                        </>
-                      )}
-                    </NavLink>
-                  ))
-                )}
+                      <NavLink
+                        key={c.id}
+                        to={`/clubs/${c.id}`}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                            isActive
+                              ? "bg-white border border-zinc-200/90 text-zinc-900 shadow-2xs font-semibold"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                          }`
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <span
+                              className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 font-mono transition-colors ${
+                                isActive
+                                  ? "bg-[#155DFC] text-white shadow-2xs"
+                                  : "bg-zinc-100 border border-zinc-200/60 text-zinc-600"
+                              }`}
+                            >
+                              {c.letter}
+                            </span>
+                            <span className="truncate">{c.name}</span>
+                          </>
+                        )}
+                      </NavLink>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -319,7 +336,8 @@ export function AppLayout() {
                       Liga Fictícia 2026
                     </span>
                     <span className="text-[10px] text-zinc-400 truncate leading-tight mt-0.5">
-                      {metrics.totalClubs} clubes · {metrics.totalPlayers} jogadores
+                      {metrics.totalClubs} clubes · {metrics.totalPlayers}{" "}
+                      jogadores
                     </span>
                   </div>
                 </div>
@@ -357,7 +375,7 @@ export function AppLayout() {
       {/* CONTEÚDO PRINCIPAL */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'pl-20' : 'pl-64'
+          isCollapsed ? "pl-20" : "pl-64"
         }`}
       >
         {/* HEADER SUPERIOR */}
@@ -366,7 +384,11 @@ export function AppLayout() {
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
-              title={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+              title={
+                isCollapsed
+                  ? "Expandir barra lateral"
+                  : "Recolher barra lateral"
+              }
             >
               <PanelLeft className="w-4 h-4" />
             </button>
@@ -377,14 +399,21 @@ export function AppLayout() {
               <ChevronRight className="w-3 h-3 text-zinc-300" />
               {breadcrumb.subpage ? (
                 <>
-                  <NavLink to={breadcrumb.category === 'Liga' ? '/matches' : '/clubs'} className="hover:text-zinc-700 transition-colors">
+                  <NavLink
+                    to={breadcrumb.category === "Liga" ? "/matches" : "/clubs"}
+                    className="hover:text-zinc-700 transition-colors"
+                  >
                     {breadcrumb.page}
                   </NavLink>
                   <ChevronRight className="w-3 h-3 text-zinc-300" />
-                  <span className="text-zinc-900 font-semibold">{breadcrumb.subpage}</span>
+                  <span className="text-zinc-900 font-semibold">
+                    {breadcrumb.subpage}
+                  </span>
                 </>
               ) : (
-                <span className="text-zinc-900 font-semibold">{breadcrumb.page}</span>
+                <span className="text-zinc-900 font-semibold">
+                  {breadcrumb.page}
+                </span>
               )}
             </div>
           </div>

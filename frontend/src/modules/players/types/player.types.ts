@@ -1,5 +1,5 @@
-export type PlayerPosition = 'GOL' | 'ZAG' | 'LAT' | 'MEI' | 'ATA';
-export type PlayerCondition = 'APTO' | 'MAL_CONDICIONADO' | 'DOENTE';
+export type PlayerPosition = "GOL" | "ZAG" | "LAT" | "MEI" | "ATA";
+export type PlayerCondition = "APTO" | "MAL_CONDICIONADO" | "DOENTE";
 
 export interface Player {
   id: number;

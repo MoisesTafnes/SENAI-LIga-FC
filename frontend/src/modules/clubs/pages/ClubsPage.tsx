@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Shield,
   Plus,
@@ -10,25 +10,25 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-} from 'lucide-react';
-import { clubsService } from '../services/clubs.service';
-import { Club, ClubSortOption } from '../types/club.types';
-import { CreateClubModal } from '../components/CreateClubModal';
+} from "lucide-react";
+import { clubsService } from "../services/clubs.service";
+import { Club, ClubSortOption } from "../types/club.types";
+import { CreateClubModal } from "../components/CreateClubModal";
 
 interface Toast {
   id: number;
-  type: 'success' | 'error';
+  type: "success" | "error";
   title: string;
   message: string;
 }
 
 const ACRONYM_COLORS = [
-  { bg: '#EFF6FF', text: '#1D4ED8' },
-  { bg: '#F0FDF4', text: '#15803D' },
-  { bg: '#FDF4FF', text: '#9333EA' },
-  { bg: '#FFF7ED', text: '#C2410C' },
-  { bg: '#F0FDFA', text: '#0F766E' },
-  { bg: '#FDF2F8', text: '#BE185D' },
+  { bg: "#EFF6FF", text: "#1D4ED8" },
+  { bg: "#F0FDF4", text: "#15803D" },
+  { bg: "#FDF4FF", text: "#9333EA" },
+  { bg: "#FFF7ED", text: "#C2410C" },
+  { bg: "#F0FDFA", text: "#0F766E" },
+  { bg: "#FDF2F8", text: "#BE185D" },
 ];
 
 function getClubColor(index: number) {
@@ -36,15 +36,19 @@ function getClubColor(index: number) {
 }
 
 function fmt(val: number | null | undefined) {
-  if (val === null || val === undefined) return '0,00';
-  return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (val === null || val === undefined) return "0,00";
+  return Number(val).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 export function ClubsPage() {
   const navigate = useNavigate();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortOption, setSortOption] = useState<ClubSortOption>('net_worth_desc');
+  const [sortOption, setSortOption] =
+    useState<ClubSortOption>("net_worth_desc");
   const [sortOpen, setSortOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -59,7 +63,11 @@ export function ClubsPage() {
       const data = await clubsService.getClubs(sortOption);
       setClubs(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Tente de novo. Se a API respondeu, mostre o message dela.');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Tente de novo. Se a API respondeu, mostre o message dela.",
+      );
       setClubs([]);
     } finally {
       setLoading(false);
@@ -76,14 +84,14 @@ export function ClubsPage() {
         setSortOpen(false);
       }
     }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const sortLabels: Record<ClubSortOption, string> = {
-    name: 'nome',
-    net_worth_desc: 'patrimônio (maior para o menor)',
-    net_worth_asc: 'patrimônio (menor para o maior)',
+    name: "nome",
+    net_worth_desc: "patrimônio (maior para o menor)",
+    net_worth_asc: "patrimônio (menor para o maior)",
   };
 
   return (
@@ -95,9 +103,12 @@ export function ClubsPage() {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Clubes</h1>
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+              Clubes
+            </h1>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Cada clube começa com 300,00 em caixa e sem jogadores. A liga aceita no máximo 20 clubes.
+              Cada clube começa com 300,00 em caixa e sem jogadores. A liga
+              aceita no máximo 20 clubes.
             </p>
           </div>
         </div>
@@ -117,7 +128,9 @@ export function ClubsPage() {
           <div className="w-14 h-14 bg-zinc-50 border border-zinc-200/60 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-400">
             <AlertCircle className="w-6 h-6 stroke-[1.5]" />
           </div>
-          <h3 className="text-sm font-bold text-zinc-900 mb-1">Não foi possível carregar os clubes</h3>
+          <h3 className="text-sm font-bold text-zinc-900 mb-1">
+            Não foi possível carregar os clubes
+          </h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-6 leading-relaxed">
             {error}
           </p>
@@ -138,7 +151,10 @@ export function ClubsPage() {
           </div>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 border border-zinc-100 rounded-xl animate-pulse">
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 border border-zinc-100 rounded-xl animate-pulse"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-zinc-100" />
                   <div className="w-32 h-4 bg-zinc-100 rounded" />
@@ -155,7 +171,9 @@ export function ClubsPage() {
           <div className="w-14 h-14 bg-zinc-50 border border-zinc-200/60 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-400">
             <Shield className="w-6 h-6 stroke-[1.5]" />
           </div>
-          <h3 className="text-sm font-bold text-zinc-900 mb-1">Nenhum clube cadastrado</h3>
+          <h3 className="text-sm font-bold text-zinc-900 mb-1">
+            Nenhum clube cadastrado
+          </h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-6 leading-relaxed">
             Crie o primeiro clube para começar.
           </p>
@@ -172,7 +190,9 @@ export function ClubsPage() {
           {/* Barra superior de status e ordenação */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
             <div className="text-xs text-zinc-500 font-medium">
-              <span className="font-bold text-zinc-800">{clubs.length} clubes</span>
+              <span className="font-bold text-zinc-800">
+                {clubs.length} clubes
+              </span>
               <span className="ml-2">{clubs.length} de 20</span>
             </div>
 
@@ -195,9 +215,15 @@ export function ClubsPage() {
                   </div>
                   {(
                     [
-                      { label: 'Nome', val: 'name' },
-                      { label: 'Patrimônio (maior para o menor)', val: 'net_worth_desc' },
-                      { label: 'Patrimônio (menor para o maior)', val: 'net_worth_asc' },
+                      { label: "Nome", val: "name" },
+                      {
+                        label: "Patrimônio (maior para o menor)",
+                        val: "net_worth_desc",
+                      },
+                      {
+                        label: "Patrimônio (menor para o maior)",
+                        val: "net_worth_asc",
+                      },
                     ] as const
                   ).map((s) => (
                     <button
@@ -207,11 +233,15 @@ export function ClubsPage() {
                         setSortOpen(false);
                       }}
                       className={`w-full text-left px-3.5 py-2 hover:bg-zinc-50 flex items-center justify-between font-medium cursor-pointer ${
-                        sortOption === s.val ? 'text-zinc-900 font-semibold' : 'text-zinc-700'
+                        sortOption === s.val
+                          ? "text-zinc-900 font-semibold"
+                          : "text-zinc-700"
                       }`}
                     >
                       <span>{s.label}</span>
-                      {sortOption === s.val && <span className="text-[#155DFC] font-bold">✓</span>}
+                      {sortOption === s.val && (
+                        <span className="text-[#155DFC] font-bold">✓</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -224,11 +254,21 @@ export function ClubsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-zinc-100 bg-zinc-50/30">
-                  <th className="text-left px-5 py-2.5 text-[11px] font-semibold text-zinc-500">Clube</th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Sigla</th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Caixa</th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Valor do elenco</th>
-                  <th className="text-right px-5 py-2.5 text-[11px] font-semibold text-zinc-500">Patrimônio</th>
+                  <th className="text-left px-5 py-2.5 text-[11px] font-semibold text-zinc-500">
+                    Clube
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                    Sigla
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                    Caixa
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                    Valor do elenco
+                  </th>
+                  <th className="text-right px-5 py-2.5 text-[11px] font-semibold text-zinc-500">
+                    Patrimônio
+                  </th>
                   <th className="px-5 py-2.5"></th>
                 </tr>
               </thead>
@@ -259,12 +299,20 @@ export function ClubsPage() {
                             >
                               {club.acronym}
                             </div>
-                            <span className="font-semibold text-zinc-900">{club.name}</span>
+                            <span className="font-semibold text-zinc-900">
+                              {club.name}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-zinc-500 font-mono">{club.acronym}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-zinc-700">{fmt(club.cash)}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-zinc-700">{fmt(club.squad_value)}</td>
+                        <td className="px-4 py-3.5 text-zinc-500 font-mono">
+                          {club.acronym}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-zinc-700">
+                          {fmt(club.cash)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-zinc-700">
+                          {fmt(club.squad_value)}
+                        </td>
                         <td className="px-5 py-3.5 text-right font-bold text-zinc-900 font-mono">
                           {fmt(club.net_worth)}
                         </td>
@@ -287,7 +335,8 @@ export function ClubsPage() {
 
           {/* Rodapé da tabela */}
           <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50/30 text-[11px] text-zinc-400">
-            Clubes pelo nome por padrão ou pelo patrimônio, do maior para o menor, com empate desfeito pelo nome.
+            Clubes pelo nome por padrão ou pelo patrimônio, do maior para o
+            menor, com empate desfeito pelo nome.
           </div>
         </div>
       )}
@@ -299,7 +348,11 @@ export function ClubsPage() {
         onSuccess={(created) => {
           setIsCreateOpen(false);
           navigate(`/clubs/${created.id}`, {
-            state: { justCreated: true, clubName: created.name, acronym: created.acronym },
+            state: {
+              justCreated: true,
+              clubName: created.name,
+              acronym: created.acronym,
+            },
           });
         }}
       />
@@ -313,11 +366,17 @@ export function ClubsPage() {
           >
             <CheckCircle2 className="w-4 h-4 text-[#008832] shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-zinc-900">{toast.title}</div>
-              <div className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{toast.message}</div>
+              <div className="text-xs font-bold text-zinc-900">
+                {toast.title}
+              </div>
+              <div className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                {toast.message}
+              </div>
             </div>
             <button
-              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              onClick={() =>
+                setToasts((prev) => prev.filter((t) => t.id !== toast.id))
+              }
               className="text-zinc-400 hover:text-zinc-600 ml-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />

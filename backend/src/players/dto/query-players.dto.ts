@@ -1,6 +1,17 @@
-import { IsOptional, IsString, IsInt, IsIn, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  IsIn,
+  IsBoolean,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import type { PlayerPosition, PlayerCondition } from '../domain/player-calculator.domain';
+import type {
+  PlayerPosition,
+  PlayerCondition,
+} from '../domain/player-calculator.domain';
 
 export class QueryPlayersDto {
   @IsOptional()

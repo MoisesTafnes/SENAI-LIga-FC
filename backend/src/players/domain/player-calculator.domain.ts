@@ -10,17 +10,61 @@ export interface PlayerAttributes {
   physical: number;
 }
 
+export interface LoyaltyPenalty {
+  daysRemaining: number;
+  percentage: number;
+  amount: number;
+}
+
 export class PlayerCalculatorDomain {
   /**
    * Tabela de Pesos por Posição (RN06)
    * A soma dos pesos de cada posição é estritamente igual a 100%.
    */
-  private static readonly POSITION_WEIGHTS: Record<PlayerPosition, PlayerAttributes> = {
-    GOL: { pace: 10, shooting: 0, passing: 20, dribbling: 0, defending: 40, physical: 30 },
-    ZAG: { pace: 10, shooting: 0, passing: 15, dribbling: 0, defending: 45, physical: 30 },
-    LAT: { pace: 25, shooting: 0, passing: 20, dribbling: 15, defending: 25, physical: 15 },
-    MEI: { pace: 10, shooting: 15, passing: 35, dribbling: 25, defending: 5, physical: 10 },
-    ATA: { pace: 20, shooting: 40, passing: 10, dribbling: 20, defending: 0, physical: 10 },
+  private static readonly POSITION_WEIGHTS: Record<
+    PlayerPosition,
+    PlayerAttributes
+  > = {
+    GOL: {
+      pace: 10,
+      shooting: 0,
+      passing: 20,
+      dribbling: 0,
+      defending: 40,
+      physical: 30,
+    },
+    ZAG: {
+      pace: 10,
+      shooting: 0,
+      passing: 15,
+      dribbling: 0,
+      defending: 45,
+      physical: 30,
+    },
+    LAT: {
+      pace: 25,
+      shooting: 0,
+      passing: 20,
+      dribbling: 15,
+      defending: 25,
+      physical: 15,
+    },
+    MEI: {
+      pace: 10,
+      shooting: 15,
+      passing: 35,
+      dribbling: 25,
+      defending: 5,
+      physical: 10,
+    },
+    ATA: {
+      pace: 20,
+      shooting: 40,
+      passing: 10,
+      dribbling: 20,
+      defending: 0,
+      physical: 10,
+    },
   };
 
   /**
@@ -41,7 +85,10 @@ export class PlayerCalculatorDomain {
    * Passo 2: Soma os produtos e divide por 100.
    * Passo 3: Arredonda para o inteiro mais próximo (meio para cima: 72.5 -> 73).
    */
-  public static calculateOverall(position: PlayerPosition, attributes: PlayerAttributes): number {
+  public static calculateOverall(
+    position: PlayerPosition,
+    attributes: PlayerAttributes,
+  ): number {
     const weights = this.POSITION_WEIGHTS[position];
     const sumProducts =
       attributes.pace * weights.pace +
@@ -66,7 +113,11 @@ export class PlayerCalculatorDomain {
    * Multiplicador de Jovem Promessa (idade <= 21): parte do overall * (100 + potencial - overall) / 100
    * Piso Mínimo: 1.00
    */
-  public static calculateBaseValue(overall: number, potential: number, ageAtCreation: number): number {
+  public static calculateBaseValue(
+    overall: number,
+    potential: number,
+    ageAtCreation: number,
+  ): number {
     let overallPart = 0;
 
     if (overall > 40 && overall <= 60) {
@@ -136,5 +187,33 @@ export class PlayerCalculatorDomain {
     const roundedValue = this.roundHalfAwayFromZero(rawMarketValue, 2);
 
     return roundedValue < 1.0 ? 1.0 : roundedValue;
+  }
+
+  public static calculateLoyaltyPenalty(
+    loyaltyUntil: Date,
+    now: Date,
+    marketValue: number,
+  ): LoyaltyPenalty {
+    const remainingMilliseconds = loyaltyUntil.getTime() - now.getTime();
+    const daysRemaining =
+      remainingMilliseconds > 0
+        ? Math.ceil(remainingMilliseconds / (1000 * 60 * 60 * 24))
+        : 0;
+
+    let percentage = 0;
+    if (daysRemaining > 0 && daysRemaining <= 30) percentage = 5;
+    else if (daysRemaining <= 180 && daysRemaining > 0) percentage = 10;
+    else if (daysRemaining > 180) percentage = 20;
+
+    const uncappedAmount = this.roundHalfAwayFromZero(
+      (marketValue * percentage) / 100,
+      2,
+    );
+
+    return {
+      daysRemaining,
+      percentage,
+      amount: Math.min(uncappedAmount, 10),
+    };
   }
 }

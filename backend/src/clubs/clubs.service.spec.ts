@@ -10,7 +10,6 @@ import { LineupFormation } from './dto/set-lineup.dto';
 
 describe('ClubsService', () => {
   let service: ClubsService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     clube: {
@@ -42,7 +41,6 @@ describe('ClubsService', () => {
     }).compile();
 
     service = module.get<ClubsService>(ClubsService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -94,7 +92,7 @@ describe('ClubsService', () => {
     it('deve recusar nome duplicado (409)', async () => {
       mockPrismaService.clube.count.mockResolvedValue(5);
       mockPrismaService.clube.findMany.mockResolvedValue([
-        { nome: 'Águias FC', sigla: 'AGU' },
+        { nomeNormalizado: 'águias fc', sigla: 'AGU' },
       ]);
 
       await expect(
@@ -102,10 +100,35 @@ describe('ClubsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('deve preservar acentos na chave normalizada e aceitar nomes que só diferem por acento', async () => {
+      mockPrismaService.clube.count.mockResolvedValue(5);
+      mockPrismaService.clube.findMany.mockResolvedValue([
+        { nomeNormalizado: 'águias fc', sigla: 'AGU' },
+      ]);
+      mockPrismaService.clube.create.mockResolvedValue({
+        id: 6,
+        nome: 'Aguias FC',
+        nomeNormalizado: 'aguias fc',
+        sigla: 'AGF',
+        caixa: 300,
+      });
+
+      await service.create({ name: 'Aguias FC', acronym: 'AGF' });
+
+      expect(mockPrismaService.clube.create).toHaveBeenCalledWith({
+        data: {
+          nome: 'Aguias FC',
+          nomeNormalizado: 'aguias fc',
+          sigla: 'AGF',
+          caixa: 300,
+        },
+      });
+    });
+
     it('deve recusar sigla duplicada na liga (409)', async () => {
       mockPrismaService.clube.count.mockResolvedValue(5);
       mockPrismaService.clube.findMany.mockResolvedValue([
-        { nome: 'Águias FC', sigla: 'AGU' },
+        { nomeNormalizado: 'águias fc', sigla: 'AGU' },
       ]);
 
       await expect(
@@ -230,7 +253,9 @@ describe('ClubsService', () => {
 
       it('deve lançar NotFoundException se menos de 5 jogadores forem encontrados no banco (404)', async () => {
         mockPrismaService.clube.findUnique.mockResolvedValue(mockClub);
-        mockPrismaService.jogador.findMany.mockResolvedValue(mockValidPlayers.slice(0, 4));
+        mockPrismaService.jogador.findMany.mockResolvedValue(
+          mockValidPlayers.slice(0, 4),
+        );
 
         await expect(
           service.updateLineup(1, {
@@ -245,7 +270,9 @@ describe('ClubsService', () => {
         const invalidClubPlayers = mockValidPlayers.map((p, i) =>
           i === 0 ? { ...p, clubeId: 99 } : p,
         );
-        mockPrismaService.jogador.findMany.mockResolvedValue(invalidClubPlayers);
+        mockPrismaService.jogador.findMany.mockResolvedValue(
+          invalidClubPlayers,
+        );
 
         await expect(
           service.updateLineup(1, {
@@ -272,7 +299,10 @@ describe('ClubsService', () => {
 
       it('deve lançar ConflictException se a escalação não possuir exatamente 1 Goleiro (409)', async () => {
         mockPrismaService.clube.findUnique.mockResolvedValue(mockClub);
-        const noGkPlayers = mockValidPlayers.map((p) => ({ ...p, posicao: 'ZAG' }));
+        const noGkPlayers = mockValidPlayers.map((p) => ({
+          ...p,
+          posicao: 'ZAG',
+        }));
         mockPrismaService.jogador.findMany.mockResolvedValue(noGkPlayers);
 
         await expect(

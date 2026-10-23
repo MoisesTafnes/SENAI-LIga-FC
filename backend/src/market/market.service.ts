@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../database';
 import { BuyPlayerDto } from './dto/buy-player.dto';
-import { PlayerCalculatorDomain, PlayerCondition } from '../players/domain/player-calculator.domain';
+import {
+  PlayerCalculatorDomain,
+  PlayerCondition,
+} from '../players/domain/player-calculator.domain';
 
 @Injectable()
 export class MarketService {
@@ -27,7 +34,9 @@ export class MarketService {
     }
 
     if (buyerClub.jogadores.length >= 12) {
-      throw new ConflictException('O clube comprador já atingiu o limite máximo de 12 jogadores no elenco.');
+      throw new ConflictException(
+        'O clube comprador já atingiu o limite máximo de 12 jogadores no elenco.',
+      );
     }
 
     const player = await this.prisma.jogador.findFirst({
@@ -45,11 +54,15 @@ export class MarketService {
     }
 
     if (player.condicao === 'DOENTE') {
-      throw new ConflictException('Jogadores doentes não podem ser transferidos.');
+      throw new ConflictException(
+        'Jogadores doentes não podem ser transferidos.',
+      );
     }
 
     if (player.clubeId !== null) {
-      throw new ConflictException('Apenas jogadores livres podem ser comprados.');
+      throw new ConflictException(
+        'Apenas jogadores livres podem ser comprados.',
+      );
     }
 
     const previousSale = await this.prisma.transacao.findFirst({
@@ -61,7 +74,9 @@ export class MarketService {
     });
 
     if (previousSale) {
-      throw new ConflictException('Um clube não pode comprar um jogador que ele mesmo já vendeu.');
+      throw new ConflictException(
+        'Um clube não pode comprar um jogador que ele mesmo já vendeu.',
+      );
     }
 
     const marketValue = PlayerCalculatorDomain.calculateMarketValue(
@@ -71,14 +86,18 @@ export class MarketService {
       player.idade,
     );
 
-    const leagueFee = marketValue > 30.00
-      ? PlayerCalculatorDomain.roundHalfAwayFromZero(marketValue * 0.05, 2)
-      : 0.00;
+    const leagueFee =
+      marketValue > 30.0
+        ? PlayerCalculatorDomain.roundHalfAwayFromZero(marketValue * 0.05, 2)
+        : 0.0;
 
-    const totalCost = PlayerCalculatorDomain.roundHalfAwayFromZero(marketValue + leagueFee, 2);
+    const totalCost = PlayerCalculatorDomain.roundHalfAwayFromZero(
+      marketValue + leagueFee,
+      2,
+    );
 
     const currentCash = Number(buyerClub.caixa);
-    const maxAllowedCost = currentCash * 0.50;
+    const maxAllowedCost = currentCash * 0.5;
 
     if (totalCost > maxAllowedCost) {
       throw new ConflictException(
@@ -97,7 +116,9 @@ export class MarketService {
       });
 
       if (sellerClubId) {
-        const sellerClub = await tx.clube.findUnique({ where: { id: sellerClubId } });
+        const sellerClub = await tx.clube.findUnique({
+          where: { id: sellerClubId },
+        });
         if (sellerClub) {
           await tx.clube.update({
             where: { id: sellerClubId },
@@ -106,7 +127,10 @@ export class MarketService {
         }
       }
 
-      const activeContract = player.contratos && player.contratos.length > 0 ? player.contratos[0] : null;
+      const activeContract =
+        player.contratos && player.contratos.length > 0
+          ? player.contratos[0]
+          : null;
       if (activeContract) {
         await tx.contrato.update({
           where: { id: activeContract.id },
@@ -138,7 +162,7 @@ export class MarketService {
           nomeJogador: player.nome,
           valor: marketValue,
           taxa: leagueFee,
-          multa: 0.00,
+          multa: 0.0,
           lucro: null,
           variacaoCaixa: -totalCost,
           criadoEm: now,
@@ -158,7 +182,7 @@ export class MarketService {
         market_value: marketValue,
         fee: leagueFee,
         league_fee: leagueFee,
-        penalty: 0.00,
+        penalty: 0.0,
         profit: null,
         cash_change: -totalCost,
         total_cost: totalCost,
@@ -195,13 +219,20 @@ export class MarketService {
     }
 
     if (!player.clubeId) {
-      throw new ConflictException('Jogador livre (sem clube) não pode ser vendido.');
+      throw new ConflictException(
+        'Jogador livre (sem clube) não pode ser vendido.',
+      );
     }
 
     const sellerClubId = player.clubeId;
-    const activeContract = player.contratos && player.contratos.length > 0 ? player.contratos[0] : null;
+    const activeContract =
+      player.contratos && player.contratos.length > 0
+        ? player.contratos[0]
+        : null;
     if (!activeContract) {
-      throw new ConflictException('Nenhum contrato ativo encontrado para o jogador.');
+      throw new ConflictException(
+        'Nenhum contrato ativo encontrado para o jogador.',
+      );
     }
 
     const saleValue = PlayerCalculatorDomain.calculateMarketValue(
@@ -213,39 +244,45 @@ export class MarketService {
 
     const now = new Date();
     const loyaltyUntil = new Date(activeContract.fidelidadeAte);
-    const diffTime = loyaltyUntil.getTime() - now.getTime();
-    const daysRemaining = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-
-    let penaltyPercentage = 0;
-    if (daysRemaining > 0 && daysRemaining <= 30) penaltyPercentage = 0.05;
-    else if (daysRemaining >= 31 && daysRemaining <= 180) penaltyPercentage = 0.10;
-    else if (daysRemaining >= 181) penaltyPercentage = 0.20;
-
-    let penaltyFee = PlayerCalculatorDomain.roundHalfAwayFromZero(saleValue * penaltyPercentage, 2);
-    if (penaltyFee > 10.00) {
-      penaltyFee = 10.00;
-    }
+    const loyaltyPenalty = PlayerCalculatorDomain.calculateLoyaltyPenalty(
+      loyaltyUntil,
+      now,
+      saleValue,
+    );
+    const {
+      daysRemaining,
+      percentage: penaltyPercentage,
+      amount: penaltyFee,
+    } = loyaltyPenalty;
 
     const originalPurchaseValue = Number(activeContract.valorCompra);
     const profit = saleValue - originalPurchaseValue;
 
-    let leagueCommission = 0.00;
+    let leagueCommission = 0.0;
     if (profit > 0) {
-      if (profit <= 10.00) {
-        leagueCommission = profit * 0.10;
+      if (profit <= 10.0) {
+        leagueCommission = profit * 0.1;
       } else {
-        const firstTier = 10.00 * 0.10;
-        const secondTier = (profit - 10.00) * 0.20;
+        const firstTier = 10.0 * 0.1;
+        const secondTier = (profit - 10.0) * 0.2;
         leagueCommission = firstTier + secondTier;
       }
-      leagueCommission = PlayerCalculatorDomain.roundHalfAwayFromZero(leagueCommission, 2);
+      leagueCommission = PlayerCalculatorDomain.roundHalfAwayFromZero(
+        leagueCommission,
+        2,
+      );
     }
 
-    const netReceivable = PlayerCalculatorDomain.roundHalfAwayFromZero(saleValue - penaltyFee - leagueCommission, 2);
+    const netReceivable = PlayerCalculatorDomain.roundHalfAwayFromZero(
+      saleValue - penaltyFee - leagueCommission,
+      2,
+    );
     const contractStatus = penaltyFee > 0 ? 'RESCINDIDO' : 'ENCERRADO';
 
     return this.prisma.$transaction(async (tx) => {
-      const sellerClub = await tx.clube.findUnique({ where: { id: sellerClubId } });
+      const sellerClub = await tx.clube.findUnique({
+        where: { id: sellerClubId },
+      });
       const newCash = Number(sellerClub?.caixa || 0) + netReceivable;
 
       await tx.clube.update({
@@ -261,6 +298,10 @@ export class MarketService {
       await tx.jogador.update({
         where: { id: player.id },
         data: { clubeId: null },
+      });
+
+      await tx.escalacao.deleteMany({
+        where: { jogadorId: player.id },
       });
 
       const transactionRecord = await tx.transacao.create({
@@ -299,7 +340,7 @@ export class MarketService {
         purchase_value: originalPurchaseValue,
         remaining_days: daysRemaining,
         days_remaining_loyalty: daysRemaining,
-        penalty_rate: penaltyPercentage * 100,
+        penalty_rate: penaltyPercentage,
         contract_status: contractStatus,
         club_cash: newCash,
         new_cash: newCash,
@@ -379,11 +420,23 @@ export class MarketService {
     return {
       data,
       summary: {
-        total_spent: PlayerCalculatorDomain.roundHalfAwayFromZero(totalSpent, 2),
-        total_received: PlayerCalculatorDomain.roundHalfAwayFromZero(totalReceived, 2),
+        total_spent: PlayerCalculatorDomain.roundHalfAwayFromZero(
+          totalSpent,
+          2,
+        ),
+        total_received: PlayerCalculatorDomain.roundHalfAwayFromZero(
+          totalReceived,
+          2,
+        ),
         total_fees: PlayerCalculatorDomain.roundHalfAwayFromZero(totalFees, 2),
-        total_penalties: PlayerCalculatorDomain.roundHalfAwayFromZero(totalPenalties, 2),
-        total_profit: PlayerCalculatorDomain.roundHalfAwayFromZero(totalProfit, 2),
+        total_penalties: PlayerCalculatorDomain.roundHalfAwayFromZero(
+          totalPenalties,
+          2,
+        ),
+        total_profit: PlayerCalculatorDomain.roundHalfAwayFromZero(
+          totalProfit,
+          2,
+        ),
       },
     };
   }
@@ -394,7 +447,8 @@ export class MarketService {
     playerId?: number,
   ): Promise<string> {
     const result = await this.getTransactionsByClub(clubId, type, playerId);
-    const header = 'data_hora;tipo;jogador;valor;taxa_ou_comissao;multa;lucro;variacao_caixa';
+    const header =
+      'data_hora;tipo;jogador;valor;taxa_ou_comissao;multa;lucro;variacao_caixa';
 
     const formatDecimal = (val: number | null) => {
       if (val === null || val === undefined) return '';

@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { Shirt, Users, Tag, Check } from 'lucide-react';
-import { ClubPlayer } from '../types/club.types';
+import { useNavigate } from "react-router-dom";
+import { Shirt, Users, Tag, Check } from "lucide-react";
+import { ClubPlayer } from "../types/club.types";
 
 interface ClubSquadTabProps {
   players: ClubPlayer[];
@@ -8,12 +8,12 @@ interface ClubSquadTabProps {
 }
 
 const AVATAR_COLORS = [
-  { bg: '#FDF2F8', text: '#BE185D' }, // Rosa
-  { bg: '#F5F3FF', text: '#7C3AED' }, // Roxo
-  { bg: '#ECFEFF', text: '#0E7490' }, // Ciano
-  { bg: '#FFF7ED', text: '#C2410C' }, // Laranja
-  { bg: '#F0FDF4', text: '#15803D' }, // Verde
-  { bg: '#EFF6FF', text: '#1D4ED8' }, // Azul
+  { bg: "#FDF2F8", text: "#BE185D" }, // Rosa
+  { bg: "#F5F3FF", text: "#7C3AED" }, // Roxo
+  { bg: "#ECFEFF", text: "#0E7490" }, // Ciano
+  { bg: "#FFF7ED", text: "#C2410C" }, // Laranja
+  { bg: "#F0FDF4", text: "#15803D" }, // Verde
+  { bg: "#EFF6FF", text: "#1D4ED8" }, // Azul
 ];
 
 function getAvatarColor(id: number) {
@@ -22,25 +22,35 @@ function getAvatarColor(id: number) {
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
+  if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function fmt(val: number | null | undefined) {
-  if (val === null || val === undefined) return '0,00';
-  return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (val === null || val === undefined) return "0,00";
+  return Number(val).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function formatDate(isoStr?: string) {
-  if (!isoStr) return { date: '-', time: '' };
+  if (!isoStr) return { date: "-", time: "" };
   try {
     const d = new Date(isoStr);
-    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const date = d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const time = d.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     return { date, time };
   } catch {
-    return { date: '-', time: '' };
+    return { date: "-", time: "" };
   }
 }
 
@@ -53,12 +63,14 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
         <div className="w-14 h-14 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-400 border border-zinc-200/60">
           <Shirt className="w-7 h-7" />
         </div>
-        <h3 className="text-sm font-bold text-zinc-900 mb-1">O clube ainda não tem jogadores</h3>
+        <h3 className="text-sm font-bold text-zinc-900 mb-1">
+          O clube ainda não tem jogadores
+        </h3>
         <p className="text-xs text-zinc-500 max-w-md mx-auto mb-6 leading-relaxed">
           Compre jogadores livres para formar o elenco.
         </p>
         <button
-          onClick={() => navigate('/players?free=true')}
+          onClick={() => navigate("/players?free=true")}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-xl text-xs font-semibold text-zinc-800 shadow-2xs transition-colors cursor-pointer"
         >
           <Users className="w-3.5 h-3.5 text-zinc-500" />
@@ -69,14 +81,14 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
   }
 
   const now = new Date();
-  const currentDateFormatted = now.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  const currentDateFormatted = now.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
-  const currentTimeFormatted = now.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  const currentTimeFormatted = now.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   return (
@@ -85,7 +97,8 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
       <div className="px-5 py-4 border-b border-zinc-100">
         <h3 className="text-sm font-bold text-zinc-900">Elenco</h3>
         <p className="text-[11px] text-zinc-400 mt-0.5">
-          Ordem por posição (GOL, ZAG, LAT, MEI, ATA), depois pelo nome. Contrato calculado para uma venda agora.
+          Ordem por posição (GOL, ZAG, LAT, MEI, ATA), depois pelo nome.
+          Contrato calculado para uma venda agora.
         </p>
       </div>
 
@@ -94,15 +107,33 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-zinc-100 bg-zinc-50/40">
-              <th className="text-left px-5 py-2.5 text-[11px] font-semibold text-zinc-500">Jogador</th>
-              <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-zinc-500">Posição</th>
-              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">Overall</th>
-              <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-zinc-500">Condição</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Valor de mercado</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Valor de compra</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-500">Fim da fidelidade</th>
-              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">Dias restantes</th>
-              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">% de multa</th>
+              <th className="text-left px-5 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Jogador
+              </th>
+              <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Posição
+              </th>
+              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Overall
+              </th>
+              <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Condição
+              </th>
+              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Valor de mercado
+              </th>
+              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Valor de compra
+              </th>
+              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Fim da fidelidade
+              </th>
+              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">
+                Dias restantes
+              </th>
+              <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-500">
+                % de multa
+              </th>
               <th className="px-5 py-2.5"></th>
             </tr>
           </thead>
@@ -115,7 +146,10 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
               const penalty = p.contract?.penalty_percentage ?? 0;
 
               return (
-                <tr key={p.id} className="hover:bg-zinc-50/70 transition-colors">
+                <tr
+                  key={p.id}
+                  className="hover:bg-zinc-50/70 transition-colors"
+                >
                   {/* Jogador */}
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
@@ -145,19 +179,19 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
 
                   {/* Condição */}
                   <td className="px-3 py-3">
-                    {p.condition === 'APTO' && (
+                    {p.condition === "APTO" && (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                         Apto
                       </span>
                     )}
-                    {p.condition === 'MAL_CONDICIONADO' && (
+                    {p.condition === "MAL_CONDICIONADO" && (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         Mal condicionado
                       </span>
                     )}
-                    {p.condition === 'DOENTE' && (
+                    {p.condition === "DOENTE" && (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-700 border border-red-200/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                         Doente
@@ -178,12 +212,14 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
                   {/* Fim da fidelidade */}
                   <td className="px-4 py-3">
                     <div className="text-zinc-800 font-medium">{date}</div>
-                    {time && <div className="text-[10px] text-zinc-400">{time}</div>}
+                    {time && (
+                      <div className="text-[10px] text-zinc-400">{time}</div>
+                    )}
                   </td>
 
                   {/* Dias restantes */}
                   <td className="px-3 py-3 text-center font-mono text-zinc-600">
-                    {daysRemaining.toLocaleString('pt-BR')}
+                    {daysRemaining.toLocaleString("pt-BR")}
                   </td>
 
                   {/* % de multa */}
@@ -227,7 +263,9 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
 
       {/* Rodapé explicativo */}
       <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50/30 text-[11px] text-zinc-400">
-        Valor de mercado, dias restantes e % de multa calculados para uma venda agora ({currentDateFormatted}, {currentTimeFormatted}). A multa tem teto de 10,00.
+        Valor de mercado, dias restantes e % de multa calculados para uma venda
+        agora ({currentDateFormatted}, {currentTimeFormatted}). A multa tem teto
+        de 10,00.
       </div>
     </div>
   );

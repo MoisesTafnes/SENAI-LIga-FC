@@ -5,20 +5,28 @@ import {
   Param,
   Query,
   Body,
-  ParseIntPipe,
   Response,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { CreateMatchDto } from './dto/create-match.dto';
+import { QueryMatchesDto } from './dto/query-matches.dto';
+import { ResourceIdPipe } from '../common/pipes/resource-id.pipe';
 
+@ApiTags('Liga')
 @Controller()
 export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
   @Post('matches')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Simular e registrar partida' })
+  @ApiResponse({
+    status: 201,
+    description: 'Partida registrada com seus seis duelos.',
+  })
   async simulateMatch(
     @Body() dto: CreateMatchDto,
     @Response({ passthrough: true }) res: any,
@@ -29,17 +37,19 @@ export class MatchesController {
   }
 
   @Get('matches')
-  async findAll(@Query('club_id') clubId?: string) {
-    const parsedClubId = clubId ? parseInt(clubId, 10) : undefined;
-    return this.matchesService.findAll(parsedClubId);
+  @ApiOperation({ summary: 'Listar partidas, opcionalmente por clube' })
+  async findAll(@Query() query: QueryMatchesDto) {
+    return this.matchesService.findAll(query.club_id);
   }
 
   @Get('matches/:id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  @ApiOperation({ summary: 'Consultar partida e seus seis duelos' })
+  async findOne(@Param('id', ResourceIdPipe) id: number) {
     return this.matchesService.findOne(id);
   }
 
   @Get('standings')
+  @ApiOperation({ summary: 'Consultar classificação da liga' })
   async getStandings() {
     return this.matchesService.getStandings();
   }

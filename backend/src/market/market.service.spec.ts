@@ -24,6 +24,9 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
       findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn().mockResolvedValue(null),
     },
+    escalacao: {
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
   };
 
@@ -40,7 +43,9 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
 
     service = module.get<MarketService>(MarketService);
     jest.clearAllMocks();
-    mockPrismaService.$transaction.mockImplementation((callback: any) => callback(mockPrismaService));
+    mockPrismaService.$transaction.mockImplementation((callback: any) =>
+      callback(mockPrismaService),
+    );
     mockPrismaService.transacao.create.mockResolvedValue({ id: 1 });
     mockPrismaService.contrato.create.mockResolvedValue({ id: 1 });
   });
@@ -66,7 +71,10 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
       });
 
       await expect(
-        service.buyPlayer(10, { club_id: 1, loyalty_until: '2027-10-18T20:00:00-03:00' }),
+        service.buyPlayer(10, {
+          club_id: 1,
+          loyalty_until: '2027-10-18T20:00:00-03:00',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -75,11 +83,14 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
         id: 2,
         nome: 'Clube Cheio',
         caixa: 1000.0,
-        jogadores: new Array(12).fill({ id: 1 }),
+        jogadores: Array.from({ length: 12 }, () => ({ id: 1 })),
       });
 
       await expect(
-        service.buyPlayer(10, { club_id: 2, loyalty_until: '2027-10-18T20:00:00-03:00' }),
+        service.buyPlayer(10, {
+          club_id: 2,
+          loyalty_until: '2027-10-18T20:00:00-03:00',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -109,13 +120,19 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
         ],
       });
 
-      mockPrismaService.clube.findUnique.mockResolvedValue({ id: 1, caixa: 100.0 });
+      mockPrismaService.clube.findUnique.mockResolvedValue({
+        id: 1,
+        caixa: 100.0,
+      });
       mockPrismaService.transacao.create.mockResolvedValue({ id: 1 });
 
       const result = await service.sellPlayer(5);
 
-      expect(result.penalty_fee).toBe(10.00);
+      expect(result.penalty_fee).toBe(10.0);
       expect(result.transaction_id).toBe(1);
+      expect(mockPrismaService.escalacao.deleteMany).toHaveBeenCalledWith({
+        where: { jogadorId: 5 },
+      });
     });
 
     it('deve calcular comissão progressiva de 10% até 10 moedas e 20% sobre o excedente de lucro (RN16)', async () => {
@@ -141,7 +158,10 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
         ],
       });
 
-      mockPrismaService.clube.findUnique.mockResolvedValue({ id: 1, caixa: 100.0 });
+      mockPrismaService.clube.findUnique.mockResolvedValue({
+        id: 1,
+        caixa: 100.0,
+      });
       mockPrismaService.transacao.create.mockResolvedValue({ id: 2 });
 
       const result = await service.sellPlayer(7);
@@ -178,7 +198,10 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
       });
 
       await expect(
-        service.buyPlayer(8, { club_id: 1, loyalty_until: '2027-10-18T20:00:00-03:00' }),
+        service.buyPlayer(8, {
+          club_id: 1,
+          loyalty_until: '2027-10-18T20:00:00-03:00',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });

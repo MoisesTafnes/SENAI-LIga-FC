@@ -1,9 +1,14 @@
-import { api } from '../../../services/api';
-import { Player, QueryPlayersParams } from '../types/player.types';
+import { api } from "../../../services/api";
+import { Player, QueryPlayersParams } from "../types/player.types";
 
 export const playersService = {
   async getPlayers(params: QueryPlayersParams) {
-    const res = await api.get('/players', { params });
+    const res = await api.get("/players", { params });
+    return res.data;
+  },
+
+  async getAllPlayers() {
+    const res = await api.get("/players", { params: { limit: 100 } });
     return res.data;
   },
 
@@ -13,7 +18,7 @@ export const playersService = {
   },
 
   async createPlayer(data: any): Promise<Player> {
-    const res = await api.post('/players', data);
+    const res = await api.post("/players", data);
     return res.data;
   },
 
@@ -24,6 +29,14 @@ export const playersService = {
 
   async updateCondition(id: number, condition: string) {
     const res = await api.patch(`/players/${id}/condition`, { condition });
+    return res.data;
+  },
+
+  async buyPlayer(id: number, clubId: number, loyaltyUntil: string) {
+    const res = await api.post(`/players/${id}/buy`, {
+      club_id: clubId,
+      loyalty_until: loyaltyUntil,
+    });
     return res.data;
   },
 

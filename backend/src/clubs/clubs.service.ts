@@ -13,6 +13,7 @@ import {
   PlayerPosition,
   PlayerCondition,
 } from '../players/domain/player-calculator.domain';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ClubsService {
@@ -55,43 +56,76 @@ export class ClubsService {
     // 1. Limite da liga: máximo 20 clubes
     const totalClubs = await this.prisma.clube.count();
     if (totalClubs >= 20) {
-      throw new ConflictException('A liga já atingiu o limite máximo de 20 clubes.');
+      throw new ConflictException(
+        'A liga já atingiu o limite máximo de 20 clubes.',
+      );
     }
 
     // 2. Nome do clube deve ter de 2 a 5 palavras
     const nameWords = dto.name.trim().split(/\s+/);
     if (nameWords.length < 2 || nameWords.length > 5) {
-      throw new BadRequestException('O nome do clube deve conter entre 2 e 5 palavras.');
+      throw new BadRequestException(
+        'O nome do clube deve conter entre 2 e 5 palavras.',
+      );
     }
 
     // 3. Validação da sigla
     if (!this.validateAcronym(dto.name, dto.acronym)) {
-      throw new BadRequestException('A sigla informada é inválida para o nome do clube.');
+      throw new BadRequestException(
+        'A sigla informada é inválida para o nome do clube.',
+      );
     }
 
     // 4. Unicidade de nome (insensível a caixa alta/baixa, mas sensível a acentos)
-    const allClubs = await this.prisma.clube.findMany({ select: { nome: true, sigla: true } });
-    const targetNameLower = dto.name.toLowerCase();
+    const normalizedName = dto.name
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase('pt-BR');
+    const allClubs = await this.prisma.clube.findMany({
+      select: { nomeNormalizado: true, sigla: true },
+    });
 
-    const existingName = allClubs.some((c) => c.nome.toLowerCase() === targetNameLower);
+    const existingName = allClubs.some(
+      (club) => club.nomeNormalizado === normalizedName,
+    );
     if (existingName) {
-      throw new ConflictException('Já existe um clube cadastrado com esse nome.');
+      throw new ConflictException(
+        'Já existe um clube cadastrado com esse nome.',
+      );
     }
 
     // 5. Unicidade de sigla
-    const existingAcronym = allClubs.some((c) => c.sigla === dto.acronym.toUpperCase());
+    const existingAcronym = allClubs.some(
+      (c) => c.sigla === dto.acronym.toUpperCase(),
+    );
     if (existingAcronym) {
-      throw new ConflictException('Já existe um clube cadastrado com essa sigla.');
+      throw new ConflictException(
+        'Já existe um clube cadastrado com essa sigla.',
+      );
     }
 
     // 6. Criação do clube com caixa inicial de 300,00
-    const club = await this.prisma.clube.create({
-      data: {
-        nome: dto.name,
-        sigla: dto.acronym.toUpperCase(),
-        caixa: 300.0,
-      },
-    });
+    let club;
+    try {
+      club = await this.prisma.clube.create({
+        data: {
+          nome: dto.name,
+          nomeNormalizado: normalizedName,
+          sigla: dto.acronym.toUpperCase(),
+          caixa: 300.0,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Já existe um clube cadastrado com esse nome ou sigla.',
+        );
+      }
+      throw error;
+    }
 
     return {
       id: club.id,
@@ -123,9 +157,15 @@ export class ClubsService {
         return sum + marketValue;
       }, 0);
 
-      const roundedSquadValue = PlayerCalculatorDomain.roundHalfAwayFromZero(squadValue, 2);
+      const roundedSquadValue = PlayerCalculatorDomain.roundHalfAwayFromZero(
+        squadValue,
+        2,
+      );
       const cash = Number(club.caixa);
-      const netWorth = PlayerCalculatorDomain.roundHalfAwayFromZero(cash + roundedSquadValue, 2);
+      const netWorth = PlayerCalculatorDomain.roundHalfAwayFromZero(
+        cash + roundedSquadValue,
+        2,
+      );
 
       return {
         id: club.id,
@@ -146,7 +186,9 @@ export class ClubsService {
         if (diff !== 0) return diff;
       }
 
-      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', {
+        sensitivity: 'base',
+      });
       if (nameDiff !== 0) return nameDiff;
 
       return a.id - b.id;
@@ -175,7 +217,13 @@ export class ClubsService {
       throw new NotFoundException('Clube não encontrado.');
     }
 
-    const positionOrder: Record<string, number> = { GOL: 1, ZAG: 2, LAT: 3, MEI: 4, ATA: 5 };
+    const positionOrder: Record<string, number> = {
+      GOL: 1,
+      ZAG: 2,
+      LAT: 3,
+      MEI: 4,
+      ATA: 5,
+    };
 
     const mappedPlayers = club.jogadores.map((player) => {
       const position = player.posicao as PlayerPosition;
@@ -198,24 +246,22 @@ export class ClubsService {
       );
 
       const activeContract =
-        player.contratos && player.contratos.length > 0 ? player.contratos[0] : null;
+        player.contratos && player.contratos.length > 0
+          ? player.contratos[0]
+          : null;
       let contractInfo = null;
 
       if (activeContract) {
-        const now = new Date();
-        const loyaltyUntil = new Date(activeContract.fidelidadeAte);
-        const diffTime = loyaltyUntil.getTime() - now.getTime();
-        const daysRemaining = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-
-        let penaltyPercentage = 0;
-        if (daysRemaining > 0 && daysRemaining <= 30) penaltyPercentage = 5;
-        else if (daysRemaining >= 31 && daysRemaining <= 180) penaltyPercentage = 10;
-        else if (daysRemaining >= 181) penaltyPercentage = 20;
+        const loyaltyPenalty = PlayerCalculatorDomain.calculateLoyaltyPenalty(
+          activeContract.fidelidadeAte,
+          new Date(),
+          marketValue,
+        );
 
         contractInfo = {
           loyalty_until: activeContract.fidelidadeAte.toISOString(),
-          days_remaining: daysRemaining,
-          penalty_percentage: penaltyPercentage,
+          days_remaining: loyaltyPenalty.daysRemaining,
+          penalty_percentage: loyaltyPenalty.percentage,
         };
       }
 
@@ -245,16 +291,27 @@ export class ClubsService {
       const posDiff = positionOrder[a.position] - positionOrder[b.position];
       if (posDiff !== 0) return posDiff;
 
-      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+      const nameDiff = a.name.localeCompare(b.name, 'pt-BR', {
+        sensitivity: 'base',
+      });
       if (nameDiff !== 0) return nameDiff;
 
       return a.id - b.id;
     });
 
-    const squadValue = mappedPlayers.reduce((sum, p) => sum + p.market_value, 0);
-    const roundedSquadValue = PlayerCalculatorDomain.roundHalfAwayFromZero(squadValue, 2);
+    const squadValue = mappedPlayers.reduce(
+      (sum, p) => sum + p.market_value,
+      0,
+    );
+    const roundedSquadValue = PlayerCalculatorDomain.roundHalfAwayFromZero(
+      squadValue,
+      2,
+    );
     const cash = Number(club.caixa);
-    const netWorth = PlayerCalculatorDomain.roundHalfAwayFromZero(cash + roundedSquadValue, 2);
+    const netWorth = PlayerCalculatorDomain.roundHalfAwayFromZero(
+      cash + roundedSquadValue,
+      2,
+    );
 
     return {
       id: club.id,
@@ -274,14 +331,19 @@ export class ClubsService {
   /**
    * Helper privado para validar se as posições dos 5 jogadores casam com a formação (RN19)
    */
-  private validateFormationRequirements(formation: LineupFormation, positions: string[]) {
+  private validateFormationRequirements(
+    formation: LineupFormation,
+    positions: string[],
+  ) {
     const goalkeepers = positions.filter((p) => p === 'GOL').length;
     const defense = positions.filter((p) => p === 'ZAG' || p === 'LAT').length;
     const midfield = positions.filter((p) => p === 'MEI').length;
     const attack = positions.filter((p) => p === 'ATA').length;
 
     if (goalkeepers !== 1) {
-      throw new ConflictException('A escalação deve conter exatamente 1 Goleiro (GOL).');
+      throw new ConflictException(
+        'A escalação deve conter exatamente 1 Goleiro (GOL).',
+      );
     }
 
     const rules = {
@@ -303,7 +365,7 @@ export class ClubsService {
     }
   }
 
- /**
+  /**
    * RN19 - Definir Escalação (PUT /clubs/:id/lineup)
    */
   async updateLineup(clubId: number, dto: SetLineupDto) {
@@ -326,7 +388,9 @@ export class ClubsService {
     });
 
     if (players.length < 5) {
-      throw new NotFoundException('Um ou mais jogadores informados não foram encontrados.');
+      throw new NotFoundException(
+        'Um ou mais jogadores informados não foram encontrados.',
+      );
     }
 
     // 3. Validar pertencimento ao clube e condição de saúde
@@ -404,20 +468,32 @@ export class ClubsService {
     const activeLineupPlayers = club.escalacoes
       .map((e) => e.jogador)
       .filter(
-        (p) => p && p.excluidoEm === null && p.clubeId === clubId && p.condicao !== 'DOENTE',
+        (p) =>
+          p &&
+          p.excluidoEm === null &&
+          p.clubeId === clubId &&
+          p.condicao !== 'DOENTE',
       );
 
     const isComplete = activeLineupPlayers.length === 5;
 
     // Ordenar titulares por ordem tática (GOL, ZAG, LAT, MEI, ATA), nome e ID (RN11)
-    const positionOrder: Record<string, number> = { GOL: 1, ZAG: 2, LAT: 3, MEI: 4, ATA: 5 };
+    const positionOrder: Record<string, number> = {
+      GOL: 1,
+      ZAG: 2,
+      LAT: 3,
+      MEI: 4,
+      ATA: 5,
+    };
 
     const formattedPlayers = activeLineupPlayers
       .sort((a, b) => {
         const pA = positionOrder[a.posicao] || 99;
         const pB = positionOrder[b.posicao] || 99;
         if (pA !== pB) return pA - pB;
-        const nameDiff = a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+        const nameDiff = a.nome.localeCompare(b.nome, 'pt-BR', {
+          sensitivity: 'base',
+        });
         if (nameDiff !== 0) return nameDiff;
         return a.id - b.id;
       })
@@ -428,14 +504,17 @@ export class ClubsService {
           p.agilidade,
           p.idade,
         );
-        const overall = PlayerCalculatorDomain.calculateOverall(p.posicao as PlayerPosition, {
-          pace: p.velocidade,
-          shooting: p.finalizacao,
-          passing: p.passe,
-          dribbling: p.drible,
-          defending: p.defesa,
-          physical: p.fisico,
-        });
+        const overall = PlayerCalculatorDomain.calculateOverall(
+          p.posicao as PlayerPosition,
+          {
+            pace: p.velocidade,
+            shooting: p.finalizacao,
+            passing: p.passe,
+            dribbling: p.drible,
+            defending: p.defesa,
+            physical: p.fisico,
+          },
+        );
 
         return {
           id: p.id,

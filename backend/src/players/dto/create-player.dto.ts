@@ -11,7 +11,9 @@ import { Transform } from 'class-transformer';
 
 export class CreatePlayerDto {
   @IsString()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value,
+  )
   @Length(3, 100)
   @Matches(/^[a-zA-ZÀ-ÿ\s-]+$/, {
     message: 'O nome deve conter apenas letras, espaços e hífens',

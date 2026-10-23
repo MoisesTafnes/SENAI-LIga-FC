@@ -3,10 +3,13 @@ import { Transform } from 'class-transformer';
 
 export class CreateClubDto {
   @IsString()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value,
+  )
   @Length(3, 60)
   @Matches(/^[a-zA-ZÀ-ÿ\s.-]+$/, {
-    message: 'O nome do clube deve conter apenas letras, espaços, hífens e pontos.',
+    message:
+      'O nome do clube deve conter apenas letras, espaços, hífens e pontos.',
   })
   name: string;
 

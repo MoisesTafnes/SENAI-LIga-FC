@@ -1,13 +1,13 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Home } from './pages/Home';
-import { AppLayout } from './layouts/AppLayout';
-import { PlayersPage } from './modules/players/pages/PlayersPage';
-import { ClubsPage } from './modules/clubs/pages/ClubsPage';
-import { ClubDetailPage } from './modules/clubs/pages/ClubDetailPage';
-import { Market } from './pages/Market';
-import { Matches } from './pages/Matches';
-import { MatchDetail } from './pages/MatchDetail';
-import { Standings } from './pages/Standings';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Home } from "./pages/Home";
+import { AppLayout } from "./layouts/AppLayout";
+import { PlayersPage } from "./modules/players/pages/PlayersPage";
+import { ClubsPage } from "./modules/clubs/pages/ClubsPage";
+import { ClubDetailPage } from "./modules/clubs/pages/ClubDetailPage";
+import { Market } from "./pages/Market";
+import { Matches } from "./pages/Matches";
+import { MatchDetail } from "./pages/MatchDetail";
+import { Standings } from "./pages/Standings";
 
 export function App() {
   return (

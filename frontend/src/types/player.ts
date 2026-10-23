@@ -1,1 +1,1 @@
-export * from '../modules/players/types/player.types';
+export * from "../modules/players/types/player.types";

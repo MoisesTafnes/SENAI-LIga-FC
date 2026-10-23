@@ -1,1 +1,1 @@
-export * from '../modules/players/components/PlayerModals';
+export * from "../modules/players/components/PlayerModals";

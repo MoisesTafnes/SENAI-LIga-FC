@@ -24,10 +24,10 @@ services:
     container_name: senai_fc_backend
     restart: always
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     environment:
-      NODE_ENV: production
-      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
       DATABASE_URL: "postgresql://${POSTGRES_USER:-administrator_senai}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-senai_fc}?schema=public"
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     depends_on:

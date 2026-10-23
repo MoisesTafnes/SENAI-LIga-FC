@@ -1,20 +1,20 @@
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi } from 'vitest';
-import { Players } from './Players';
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { describe, it, expect, vi } from "vitest";
+import { Players } from "./Players";
 
-vi.mock('../services/api', () => ({
+vi.mock("../services/api", () => ({
   api: {
     get: vi.fn().mockResolvedValue({
       data: {
         data: [
           {
             id: 1,
-            name: 'João Silva',
-            position: 'ATA',
+            name: "João Silva",
+            position: "ATA",
             agility: 80,
             age: 23,
-            condition: 'APTO',
+            condition: "APTO",
             base_value: 50.0,
             market_value: 50.0,
             overall: 78,
@@ -27,15 +27,15 @@ vi.mock('../services/api', () => ({
   },
 }));
 
-describe('Players Component (Módulo de Jogadores)', () => {
-  it('deve renderizar o título da página e o botão de novo jogador', async () => {
+describe("Players Component (Módulo de Jogadores)", () => {
+  it("deve renderizar o título da página e o botão de novo jogador", async () => {
     render(
       <MemoryRouter>
         <Players />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
-    expect(screen.getByText('Jogadores')).toBeInTheDocument();
-    expect(screen.getByText('Novo jogador')).toBeInTheDocument();
+    expect(screen.getByText("Jogadores")).toBeInTheDocument();
+    expect(screen.getByText("Novo jogador")).toBeInTheDocument();
   });
 });

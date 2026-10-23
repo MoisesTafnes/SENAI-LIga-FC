@@ -1,9 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  const requestLogger = new Logger('HTTP');
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api/v1');
@@ -16,34 +19,34 @@ async function bootstrap() {
     }),
   );
 
-  // Headers de segurança e ocultação de tecnologia do servidor
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.disable('x-powered-by');
-  app.use((req: any, res: any, next: any) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.on('finish', () => {
+      requestLogger.log(`${req.method} ${req.originalUrl} ${res.statusCode}`);
+    });
     next();
   });
 
-  const allowedOrigins = [
-    process.env.CORS_ORIGIN,
-    process.env.FRONTEND_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ].filter(Boolean) as string[];
-
   app.enableCors({
-    origin: (origin, callback) => {
-      // Permite requisições sem origin (como mobile apps, curl, docker healthchecks) ou na lista permitida
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Fallback amigável para ambiente de avaliação
-      }
-    },
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+  });
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('SENAI FC API')
+    .setDescription(
+      'API REST para gerenciamento da liga de futebol: jogadores, clubes, mercado, escalações, partidas e classificação.',
+    )
+    .setVersion('1.0.0')
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'api/docs-json',
   });
 
   const port = process.env.PORT || 3000;
@@ -52,4 +55,10 @@ async function bootstrap() {
   logger.log(`API do Backend inicializada com sucesso na porta ${port}`);
 }
 
-bootstrap();
+void bootstrap().catch((error: unknown) => {
+  const logger = new Logger('Bootstrap');
+  const details =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  logger.error('Falha ao iniciar a API.', details);
+  process.exitCode = 1;
+});

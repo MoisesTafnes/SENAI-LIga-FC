@@ -10,8 +10,6 @@ import { ClubsService } from '../clubs/clubs.service';
 
 describe('MatchesService (RN20 e RN21)', () => {
   let service: MatchesService;
-  let prisma: PrismaService;
-  let clubsService: ClubsService;
 
   const mockPrismaService = {
     clube: {
@@ -46,8 +44,6 @@ describe('MatchesService (RN20 e RN21)', () => {
     }).compile();
 
     service = module.get<MatchesService>(MatchesService);
-    prisma = module.get<PrismaService>(PrismaService);
-    clubsService = module.get<ClubsService>(ClubsService);
 
     jest.clearAllMocks();
   });
@@ -57,19 +53,109 @@ describe('MatchesService (RN20 e RN21)', () => {
     const mockAwayClub = { id: 2, nome: 'Tigres FC', sigla: 'TIG' };
 
     const mockHomePlayers = [
-      { id: 10, name: 'Goleiro H', position: 'GOL', condition: 'APTO', defending: 80, shooting: 50, passing: 50, dribbling: 50 },
-      { id: 11, name: 'Zagueiro H', position: 'ZAG', condition: 'APTO', defending: 80, shooting: 50, passing: 50, dribbling: 50 },
-      { id: 12, name: 'Lateral H', position: 'LAT', condition: 'APTO', defending: 70, shooting: 50, passing: 50, dribbling: 60 },
-      { id: 13, name: 'Atacante H1', position: 'ATA', condition: 'APTO', defending: 40, shooting: 85, passing: 60, dribbling: 70 },
-      { id: 14, name: 'Atacante H2', position: 'ATA', condition: 'APTO', defending: 40, shooting: 90, passing: 60, dribbling: 75 },
+      {
+        id: 10,
+        name: 'Goleiro H',
+        position: 'GOL',
+        condition: 'APTO',
+        defending: 80,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+      },
+      {
+        id: 11,
+        name: 'Zagueiro H',
+        position: 'ZAG',
+        condition: 'APTO',
+        defending: 80,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+      },
+      {
+        id: 12,
+        name: 'Lateral H',
+        position: 'LAT',
+        condition: 'APTO',
+        defending: 70,
+        shooting: 50,
+        passing: 50,
+        dribbling: 60,
+      },
+      {
+        id: 13,
+        name: 'Atacante H1',
+        position: 'ATA',
+        condition: 'APTO',
+        defending: 40,
+        shooting: 85,
+        passing: 60,
+        dribbling: 70,
+      },
+      {
+        id: 14,
+        name: 'Atacante H2',
+        position: 'ATA',
+        condition: 'APTO',
+        defending: 40,
+        shooting: 90,
+        passing: 60,
+        dribbling: 75,
+      },
     ];
 
     const mockAwayPlayers = [
-      { id: 20, name: 'Goleiro A', position: 'GOL', condition: 'APTO', defending: 70, shooting: 50, passing: 50, dribbling: 50 },
-      { id: 21, name: 'Zagueiro A', position: 'ZAG', condition: 'APTO', defending: 70, shooting: 50, passing: 50, dribbling: 50 },
-      { id: 22, name: 'Meia A', position: 'MEI', condition: 'APTO', defending: 60, shooting: 60, passing: 75, dribbling: 70 },
-      { id: 23, name: 'Atacante A1', position: 'ATA', condition: 'APTO', defending: 40, shooting: 80, passing: 60, dribbling: 70 },
-      { id: 24, name: 'Atacante A2', position: 'ATA', condition: 'APTO', defending: 40, shooting: 75, passing: 60, dribbling: 70 },
+      {
+        id: 20,
+        name: 'Goleiro A',
+        position: 'GOL',
+        condition: 'APTO',
+        defending: 70,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+      },
+      {
+        id: 21,
+        name: 'Zagueiro A',
+        position: 'ZAG',
+        condition: 'APTO',
+        defending: 70,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+      },
+      {
+        id: 22,
+        name: 'Meia A',
+        position: 'MEI',
+        condition: 'APTO',
+        defending: 60,
+        shooting: 60,
+        passing: 75,
+        dribbling: 70,
+      },
+      {
+        id: 23,
+        name: 'Atacante A1',
+        position: 'ATA',
+        condition: 'APTO',
+        defending: 40,
+        shooting: 80,
+        passing: 60,
+        dribbling: 70,
+      },
+      {
+        id: 24,
+        name: 'Atacante A2',
+        position: 'ATA',
+        condition: 'APTO',
+        defending: 40,
+        shooting: 75,
+        passing: 60,
+        dribbling: 70,
+      },
     ];
 
     it('deve lançar BadRequestException se mandante for igual ao visitante (400)', async () => {
@@ -79,8 +165,14 @@ describe('MatchesService (RN20 e RN21)', () => {
     });
 
     it('deve lançar ConflictException se a escalação de um dos clubes estiver incompleta (409)', async () => {
-      mockClubsService.getLineup.mockResolvedValueOnce({ complete: true, players: mockHomePlayers });
-      mockClubsService.getLineup.mockResolvedValueOnce({ complete: false, players: [] });
+      mockClubsService.getLineup.mockResolvedValueOnce({
+        complete: true,
+        players: mockHomePlayers,
+      });
+      mockClubsService.getLineup.mockResolvedValueOnce({
+        complete: false,
+        players: [],
+      });
 
       await expect(
         service.simulateMatch({ home_club_id: 1, away_club_id: 2 }),
@@ -88,7 +180,10 @@ describe('MatchesService (RN20 e RN21)', () => {
     });
 
     it('deve lançar NotFoundException se algum clube não for encontrado no banco (404)', async () => {
-      mockClubsService.getLineup.mockResolvedValue({ complete: true, players: mockHomePlayers });
+      mockClubsService.getLineup.mockResolvedValue({
+        complete: true,
+        players: mockHomePlayers,
+      });
       mockPrismaService.clube.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -101,8 +196,16 @@ describe('MatchesService (RN20 e RN21)', () => {
       const mockHomeSick = [...mockHomePlayers];
       mockHomeSick[4] = { ...mockHomeSick[4], condition: 'MAL_CONDICIONADO' };
 
-      mockClubsService.getLineup.mockResolvedValueOnce({ complete: true, formation: '2-2', players: mockHomeSick });
-      mockClubsService.getLineup.mockResolvedValueOnce({ complete: true, formation: '2-1-1', players: mockAwayPlayers });
+      mockClubsService.getLineup.mockResolvedValueOnce({
+        complete: true,
+        formation: '2-2',
+        players: mockHomeSick,
+      });
+      mockClubsService.getLineup.mockResolvedValueOnce({
+        complete: true,
+        formation: '2-1-1',
+        players: mockAwayPlayers,
+      });
 
       mockPrismaService.clube.findUnique.mockImplementation(({ where }) => {
         if (where.id === 1) return Promise.resolve(mockHomeClub);
@@ -122,13 +225,32 @@ describe('MatchesService (RN20 e RN21)', () => {
         mandante: mockHomeClub,
         visitante: mockAwayClub,
         duelos: [
-          { ordem: 1, clubeAtacanteId: 1, atacanteId: 14, defensorId: 20, nomeAtacante: 'Atacante H2', nomeDefensor: 'Goleiro A', posicaoAtacante: 'ATA', posicaoDefensor: 'GOL', condicaoAtacante: 'MAL_CONDICIONADO', condicaoDefensor: 'APTO', atributoAtaque: 'shooting', atributoDefesa: 'defending', valorAtaque: 77, valorDefesa: 70, gol: true },
+          {
+            ordem: 1,
+            clubeAtacanteId: 1,
+            atacanteId: 14,
+            defensorId: 20,
+            nomeAtacante: 'Atacante H2',
+            nomeDefensor: 'Goleiro A',
+            posicaoAtacante: 'ATA',
+            posicaoDefensor: 'GOL',
+            condicaoAtacante: 'MAL_CONDICIONADO',
+            condicaoDefensor: 'APTO',
+            atributoAtaque: 'shooting',
+            atributoDefesa: 'defending',
+            valorAtaque: 77,
+            valorDefesa: 70,
+            gol: true,
+          },
         ],
       };
 
       mockPrismaService.partida.create.mockResolvedValue(mockMatchCreated);
 
-      const result = await service.simulateMatch({ home_club_id: 1, away_club_id: 2 });
+      const result = await service.simulateMatch({
+        home_club_id: 1,
+        away_club_id: 2,
+      });
 
       expect(result.id).toBe(100);
       expect(result.home.club_id).toBe(1);
@@ -148,9 +270,21 @@ describe('MatchesService (RN20 e RN21)', () => {
 
       const mockMatches = [
         // Águias 2 x 0 Tigres (Águias 3pts, +2 saldo)
-        { id: 1, mandanteId: 1, visitanteId: 2, golsMandante: 2, golsVisitante: 0 },
+        {
+          id: 1,
+          mandanteId: 1,
+          visitanteId: 2,
+          golsMandante: 2,
+          golsVisitante: 0,
+        },
         // Leões 3 x 0 Tigres (Leões 3pts, +3 saldo)
-        { id: 2, mandanteId: 3, visitanteId: 2, golsMandante: 3, golsVisitante: 0 },
+        {
+          id: 2,
+          mandanteId: 3,
+          visitanteId: 2,
+          golsMandante: 3,
+          golsVisitante: 0,
+        },
       ];
 
       mockPrismaService.clube.findMany.mockResolvedValue(mockClubs);

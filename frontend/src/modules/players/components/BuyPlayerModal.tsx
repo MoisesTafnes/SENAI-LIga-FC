@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X, ShoppingCart, AlertCircle, Shield, CheckCircle2, RefreshCw, ArrowRight } from 'lucide-react';
-import { api } from '../../../services/api';
-import { Player } from '../types/player.types';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  X,
+  ShoppingCart,
+  AlertCircle,
+  Shield,
+  CheckCircle2,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
+import { Player } from "../types/player.types";
+import { playersService } from "../services/players.service";
 
 interface BuyPlayerModalProps {
   isOpen: boolean;
@@ -19,16 +27,26 @@ interface BuyPlayerModalProps {
 }
 
 function fmt(val: number | null | undefined) {
-  if (val === null || val === undefined) return '0,00';
-  return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (val === null || val === undefined) return "0,00";
+  return Number(val).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function formatDateFull(isoStr?: string) {
-  if (!isoStr) return '-';
+  if (!isoStr) return "-";
   try {
     const d = new Date(isoStr);
-    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const date = d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const time = d.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     return `${date}, ${time}`;
   } catch {
     return isoStr;
@@ -36,20 +54,20 @@ function formatDateFull(isoStr?: string) {
 }
 
 const POSITION_LABELS: Record<string, string> = {
-  GOL: 'Goleiro',
-  ZAG: 'Zagueiro',
-  LAT: 'Lateral',
-  MEI: 'Meio-campo',
-  ATA: 'Atacante',
+  GOL: "Goleiro",
+  ZAG: "Zagueiro",
+  LAT: "Lateral",
+  MEI: "Meio-campo",
+  ATA: "Atacante",
 };
 
 const AVATAR_COLORS = [
-  { bg: '#FDF2F8', text: '#BE185D' },
-  { bg: '#F5F3FF', text: '#7C3AED' },
-  { bg: '#ECFEFF', text: '#0E7490' },
-  { bg: '#FFF7ED', text: '#C2410C' },
-  { bg: '#F0FDF4', text: '#15803D' },
-  { bg: '#EFF6FF', text: '#1D4ED8' },
+  { bg: "#FDF2F8", text: "#BE185D" },
+  { bg: "#F5F3FF", text: "#7C3AED" },
+  { bg: "#ECFEFF", text: "#0E7490" },
+  { bg: "#FFF7ED", text: "#C2410C" },
+  { bg: "#F0FDF4", text: "#15803D" },
+  { bg: "#EFF6FF", text: "#1D4ED8" },
 ];
 
 function getAvatarColor(id: number) {
@@ -58,7 +76,7 @@ function getAvatarColor(id: number) {
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
+  if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
@@ -72,11 +90,11 @@ export function BuyPlayerModal({
 }: BuyPlayerModalProps) {
   const navigate = useNavigate();
 
-  const [selectedClubId, setSelectedClubId] = useState<number | ''>('');
-  const [loyaltyDate, setLoyaltyDate] = useState<string>('');
-  const [loyaltyTime, setLoyaltyTime] = useState<string>('15:00');
+  const [selectedClubId, setSelectedClubId] = useState<number | "">("");
+  const [loyaltyDate, setLoyaltyDate] = useState<string>("");
+  const [loyaltyTime, setLoyaltyTime] = useState<string>("15:00");
   const [loading, setLoading] = useState(false);
-  const [errorType, setErrorType] = useState<'network' | 'rule' | null>(null);
+  const [errorType, setErrorType] = useState<"network" | "rule" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [buyResult, setBuyResult] = useState<any | null>(null);
 
@@ -85,8 +103,8 @@ export function BuyPlayerModal({
     if (isOpen) {
       const nextYear = new Date();
       nextYear.setFullYear(nextYear.getFullYear() + 1);
-      setLoyaltyDate(nextYear.toISOString().split('T')[0]);
-      setLoyaltyTime('15:00');
+      setLoyaltyDate(nextYear.toISOString().split("T")[0]);
+      setLoyaltyTime("15:00");
       setErrorType(null);
       setErrorMessage(null);
       setBuyResult(null);
@@ -106,14 +124,17 @@ export function BuyPlayerModal({
 
   async function handleConfirm(e?: React.FormEvent) {
     if (e) e.preventDefault();
+    if (!player) return;
     if (!selectedClubId) {
-      setErrorType('rule');
-      setErrorMessage('Por favor, selecione o clube comprador.');
+      setErrorType("rule");
+      setErrorMessage("Por favor, selecione o clube comprador.");
       return;
     }
     if (!loyaltyDate) {
-      setErrorType('rule');
-      setErrorMessage('Por favor, informe a data de término do contrato de fidelidade.');
+      setErrorType("rule");
+      setErrorMessage(
+        "Por favor, informe a data de término do contrato de fidelidade.",
+      );
       return;
     }
 
@@ -123,28 +144,31 @@ export function BuyPlayerModal({
       setErrorMessage(null);
 
       // Envia data no formato ISO com horário de Brasília (-03:00)
-      const timeStr = loyaltyTime || '15:00';
+      const timeStr = loyaltyTime || "15:00";
       const isoWithTz = `${loyaltyDate}T${timeStr}:00-03:00`;
 
-      const response = await api.post(`/players/${player!.id}/buy`, {
-        club_id: Number(selectedClubId),
-        loyalty_until: isoWithTz,
-      });
+      const response = await playersService.buyPlayer(
+        player.id,
+        Number(selectedClubId),
+        isoWithTz,
+      );
 
-      setBuyResult(response.data);
-      onSuccess(response.data, Number(selectedClubId));
+      setBuyResult(response);
+      onSuccess(response, Number(selectedClubId));
     } catch (err: any) {
-      if (err.code === 'ERR_NETWORK' || !err.response) {
-        setErrorType('network');
-        setErrorMessage('A compra não foi confirmada. Verifique a conexão e tente de novo.');
+      if (err.code === "ERR_NETWORK" || !err.response) {
+        setErrorType("network");
+        setErrorMessage(
+          "A compra não foi confirmada. Verifique a conexão e tente de novo.",
+        );
       } else {
-        setErrorType('rule');
+        setErrorType("rule");
         const msg =
           err.response?.data?.message ||
           err.response?.data?.error ||
           err.message ||
-          'A compra foi recusada pela liga.';
-        setErrorMessage(Array.isArray(msg) ? msg.join(' | ') : String(msg));
+          "A compra foi recusada pela liga.";
+        setErrorMessage(Array.isArray(msg) ? msg.join(" | ") : String(msg));
       }
     } finally {
       setLoading(false);
@@ -153,7 +177,7 @@ export function BuyPlayerModal({
 
   // TELA M05: Compra concluída
   if (buyResult) {
-    const clubName = selectedClub ? selectedClub.name : 'clube';
+    const clubName = selectedClub ? selectedClub.name : "clube";
     const isFeeExempt = (buyResult.fee ?? 0) === 0;
 
     return (
@@ -165,7 +189,9 @@ export function BuyPlayerModal({
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-zinc-900">Compra concluída</h2>
+                <h2 className="text-base font-bold text-zinc-900">
+                  Compra concluída
+                </h2>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   {player.name} agora é do {clubName}.
                 </p>
@@ -184,32 +210,46 @@ export function BuyPlayerModal({
             <div className="p-3 flex items-center justify-between bg-white">
               <div>
                 <span className="text-zinc-600 block">Valor</span>
-                <span className="text-[10px] text-zinc-400">Valor de mercado no momento da compra</span>
+                <span className="text-[10px] text-zinc-400">
+                  Valor de mercado no momento da compra
+                </span>
               </div>
-              <span className="font-mono font-bold text-zinc-900">{fmt(buyResult.value ?? buyResult.market_value)}</span>
+              <span className="font-mono font-bold text-zinc-900">
+                {fmt(buyResult.value ?? buyResult.market_value)}
+              </span>
             </div>
 
             <div className="p-3 flex items-center justify-between bg-white">
               <div>
                 <span className="text-zinc-600 block">Taxa</span>
                 <span className="text-[10px] text-zinc-400">
-                  {isFeeExempt ? 'Isento: não passa de 30,00' : '5% do valor, porque passa de 30,00'}
+                  {isFeeExempt
+                    ? "Isento: não passa de 30,00"
+                    : "5% do valor, porque passa de 30,00"}
                 </span>
               </div>
-              <span className="font-mono font-medium text-zinc-800">{fmt(buyResult.fee ?? buyResult.league_fee)}</span>
+              <span className="font-mono font-medium text-zinc-800">
+                {fmt(buyResult.fee ?? buyResult.league_fee)}
+              </span>
             </div>
 
             <div className="p-3 flex items-center justify-between bg-zinc-50/60 font-semibold text-zinc-900">
               <div>
                 <span className="block font-bold">Custo total</span>
-                <span className="text-[10px] text-zinc-400 font-normal">Valor + taxa</span>
+                <span className="text-[10px] text-zinc-400 font-normal">
+                  Valor + taxa
+                </span>
               </div>
-              <span className="font-mono text-sm font-bold text-zinc-900">{fmt(buyResult.total_cost)}</span>
+              <span className="font-mono text-sm font-bold text-zinc-900">
+                {fmt(buyResult.total_cost)}
+              </span>
             </div>
 
             <div className="p-3 flex items-center justify-between bg-white">
               <span className="text-zinc-600">Fim da fidelidade</span>
-              <span className="font-medium text-zinc-800">{formatDateFull(buyResult.loyalty_until)}</span>
+              <span className="font-medium text-zinc-800">
+                {formatDateFull(buyResult.loyalty_until)}
+              </span>
             </div>
 
             <div className="p-3 flex items-center justify-between bg-white">
@@ -222,7 +262,9 @@ export function BuyPlayerModal({
 
             <div className="p-3 flex items-center justify-between bg-zinc-50 font-bold text-zinc-900">
               <span>Novo caixa do {clubName}</span>
-              <span className="font-mono text-sm">{fmt(buyResult.club_cash)}</span>
+              <span className="font-mono text-sm">
+                {fmt(buyResult.club_cash)}
+              </span>
             </div>
           </div>
 
@@ -259,9 +301,12 @@ export function BuyPlayerModal({
       <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-base font-bold text-zinc-900">Comprar jogador</h2>
+            <h2 className="text-base font-bold text-zinc-900">
+              Comprar jogador
+            </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Escolha o clube comprador e até quando vai a fidelidade do contrato.
+              Escolha o clube comprador e até quando vai a fidelidade do
+              contrato.
             </p>
           </div>
           <button
@@ -274,7 +319,7 @@ export function BuyPlayerModal({
         </div>
 
         {/* ALERTA DE ERRO: SEM CONEXÃO (M03) */}
-        {errorType === 'network' && (
+        {errorType === "network" && (
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl mb-4 text-xs text-red-800 flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <div>
@@ -285,7 +330,7 @@ export function BuyPlayerModal({
         )}
 
         {/* ALERTA DE ERRO: COMPRA RECUSADA (M04, M07, M08) */}
-        {errorType === 'rule' && (
+        {errorType === "rule" && (
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl mb-4 text-xs text-red-800 flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <div>
@@ -306,15 +351,21 @@ export function BuyPlayerModal({
                 {initials}
               </div>
               <div>
-                <span className="font-bold text-zinc-900 block text-xs">{player.name}</span>
+                <span className="font-bold text-zinc-900 block text-xs">
+                  {player.name}
+                </span>
                 <span className="text-[11px] text-zinc-500">
                   {player.position} · {posLabel} · {player.age} anos
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-zinc-400 block">Valor de mercado</span>
-              <span className="font-mono font-bold text-zinc-900 text-xs">{fmt(player.market_value)}</span>
+              <span className="text-[10px] text-zinc-400 block">
+                Valor de mercado
+              </span>
+              <span className="font-mono font-bold text-zinc-900 text-xs">
+                {fmt(player.market_value)}
+              </span>
             </div>
           </div>
 
@@ -329,7 +380,11 @@ export function BuyPlayerModal({
               </div>
               <select
                 value={selectedClubId}
-                onChange={(e) => setSelectedClubId(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) =>
+                  setSelectedClubId(
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
                 required
                 disabled={loading}
                 className="w-full h-10 pl-9 pr-3 bg-white border border-zinc-300 rounded-xl text-xs text-zinc-800 focus:outline-none focus:border-[#155DFC] focus:ring-1 focus:ring-[#155DFC] cursor-pointer disabled:bg-zinc-50"
@@ -345,7 +400,7 @@ export function BuyPlayerModal({
             <p className="text-[11px] text-zinc-400 mt-1">
               {selectedClub
                 ? `Caixa atual: ${fmt(selectedClub.cash)}. O custo total (valor + taxa) pode ir até 50% do caixa.`
-                : 'O custo total (valor + taxa) pode ir até 50% do caixa.'}
+                : "O custo total (valor + taxa) pode ir até 50% do caixa."}
             </p>
           </div>
 
@@ -377,7 +432,8 @@ export function BuyPlayerModal({
               </div>
             </div>
             <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
-              Depois do momento da compra e até 1.095 dias. Horário de Brasília; enviado com o fuso (-03:00).
+              Depois do momento da compra e até 1.095 dias. Horário de Brasília;
+              enviado com o fuso (-03:00).
             </p>
           </div>
 
@@ -385,7 +441,8 @@ export function BuyPlayerModal({
           <div className="p-3 bg-zinc-50 border border-zinc-200/60 rounded-xl text-[11px] text-zinc-500 flex items-start gap-2">
             <span className="text-zinc-400 mt-0.5">ℹ</span>
             <p className="leading-relaxed">
-              A taxa é de 5% do valor de mercado, só quando ele passa de 30,00. Taxa, custo e novo caixa são calculados ao confirmar.
+              A taxa é de 5% do valor de mercado, só quando ele passa de 30,00.
+              Taxa, custo e novo caixa são calculados ao confirmar.
             </p>
           </div>
 
@@ -393,7 +450,9 @@ export function BuyPlayerModal({
           {loading && (
             <div className="p-3 bg-blue-50 border border-blue-200/70 rounded-xl text-xs text-blue-900 flex items-center gap-2">
               <span className="text-blue-500">ℹ</span>
-              <span>Enviando a compra. Os botões ficam desabilitados até a resposta.</span>
+              <span>
+                Enviando a compra. Os botões ficam desabilitados até a resposta.
+              </span>
             </div>
           )}
 
@@ -408,7 +467,7 @@ export function BuyPlayerModal({
               Cancelar
             </button>
 
-            {errorType === 'network' ? (
+            {errorType === "network" ? (
               <button
                 type="button"
                 onClick={() => handleConfirm()}
