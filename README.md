@@ -291,7 +291,7 @@ docker-compose.yml
 
 Usei o assistente Copilot como apoio durante o desenvolvimento e a correção do projeto. Ele ajudou a analisar o erro do container (`Cannot find module './app.module'`), conferir a saída do Nest build e identificar o efeito do cache incremental; a correção foi desativar o incremental apenas no `tsconfig.build.json` de produção e confirmar que os arquivos compilados voltaram a ser gerados. Também usei o assistente para revisar a configuração do Compose e do `.env.example`, preparar esta documentação e implementar/revisar as correções de CORS, transações da escalação, chave normalizada dos clubes, serviços de API no frontend, logs HTTP e Swagger.
 
-Revisei as sugestões e validei as mudanças com testes e builds locais. Não alterei o caminho de importação do `AppModule`, porque a localização do arquivo e o import já estavam corretos. Para o Swagger, descartei a versão 11, incompatível com o NestJS 10 deste backend, e usei a versão 7.4 compatível. Não usei IA para inventar resultados dos roteiros da banca nem para fabricar histórico de commits ou de envios.
+Revisei as sugestões e validei as mudanças com testes e builds locais. Não alterei o caminho de importação do `AppModule`, porque a localização do arquivo e o import já estavam corretos. Para documentar a API, atualizei o conjunto do NestJS 10 para versões 11 compatíveis entre si, após revisar e corrigir os alertas das dependências. Não usei IA para inventar resultados dos roteiros da banca nem para fabricar histórico de commits ou de envios.
 
 ## Histórico do Git
 
