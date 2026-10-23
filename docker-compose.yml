@@ -4,15 +4,15 @@ services:
     container_name: senai_fc_db
     restart: always
     environment:
-      POSTGRES_USER: administrator_senai
-      POSTGRES_PASSWORD: DBTAFNES
-      POSTGRES_DB: senai_fc
+      POSTGRES_USER: ${POSTGRES_USER:-administrator_senai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD in the root .env file}
+      POSTGRES_DB: ${POSTGRES_DB:-senai_fc}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U administrator_senai -d senai_fc"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,8 +28,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: "postgresql://administrator_senai:DBTAFNES@postgres:5432/senai_fc?schema=public"
-      CORS_ORIGIN: "http://localhost:5173"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-administrator_senai}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-senai_fc}?schema=public"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,12 +38,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api/v1}
     container_name: senai_fc_frontend
     restart: always
     ports:
       - "5173:5173"
-    environment:
-      VITE_API_URL: "http://localhost:3000/api/v1"
     depends_on:
       - backend
 
