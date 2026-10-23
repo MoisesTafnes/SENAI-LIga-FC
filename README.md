@@ -33,6 +33,8 @@ O frontend é uma SPA (Single Page Application): o React renderiza as telas no n
 
 As telas cobrem o painel inicial, jogadores, clubes e elenco, compra e venda, histórico de transações, escalações, partidas e classificação. As chamadas HTTP ficam em clientes e serviços próprios; os componentes apresentam os dados e as respostas da API. O endereço-base padrão é `http://localhost:3000/api/v1`.
 
+Também ajustei a navegação e os formulários para telas menores: o menu lateral vira um painel recolhível, as tabelas mantêm a rolagem horizontal dentro do próprio quadro e os modais rolam sem mover a página ao fundo. Conferi as telas de jogadores, clube e histórico em 375 px, além do layout de jogadores e do modal na resolução desktop de 1366 × 768 px.
+
 ## 3. Suíte de Testes Automatizados
 
 Os testes são executados em modo não interativo e terminam sozinhos:

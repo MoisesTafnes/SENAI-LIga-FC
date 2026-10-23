@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Player } from "../types/player.types";
 import { playersService } from "../services/players.service";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock";
 
 interface BuyPlayerModalProps {
   isOpen: boolean;
@@ -97,6 +98,7 @@ export function BuyPlayerModal({
   const [errorType, setErrorType] = useState<"network" | "rule" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [buyResult, setBuyResult] = useState<any | null>(null);
+  useBodyScrollLock(isOpen);
 
   // Inicializa data padrão: hoje + 1 ano às 15:00
   useEffect(() => {
@@ -181,8 +183,8 @@ export function BuyPlayerModal({
     const isFeeExempt = (buyResult.fee ?? 0) === 0;
 
     return (
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200">
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60 mt-0.5">
@@ -297,8 +299,8 @@ export function BuyPlayerModal({
 
   // TELA M01 / M02 / M03 / M04 / M07 / M08
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-base font-bold text-zinc-900">

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { ClubPlayer } from "../types/club.types";
 import { clubsService } from "../services/clubs.service";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock";
 
 interface SellPlayerModalProps {
   isOpen: boolean;
@@ -87,6 +88,8 @@ export function SellPlayerModal({
   const [error, setError] = useState<string | null>(null);
   const [saleResult, setSaleResult] = useState<any | null>(null);
 
+  useBodyScrollLock(isOpen);
+
   if (!isOpen || !player) return null;
 
   async function handleConfirm() {
@@ -126,8 +129,8 @@ export function SellPlayerModal({
     const isNegativeProfit = (saleResult.profit ?? 0) < 0;
 
     return (
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200">
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60 mt-0.5">
@@ -289,8 +292,8 @@ export function SellPlayerModal({
 
   // TELA V01 / V04 / V05: Confirmação de Venda
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-base font-bold text-zinc-900">

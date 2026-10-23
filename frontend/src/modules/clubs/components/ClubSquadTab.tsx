@@ -104,7 +104,7 @@ export function ClubSquadTab({ players, onSellClick }: ClubSquadTabProps) {
 
       {/* Tabela de jogadores */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full min-w-[760px] text-xs">
           <thead>
             <tr className="border-b border-zinc-100 bg-zinc-50/40">
               <th className="text-left px-5 py-2.5 text-[11px] font-semibold text-zinc-500">

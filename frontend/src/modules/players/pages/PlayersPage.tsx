@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock";
 import { Player } from "../types/player.types";
 import {
   CreatePlayerModal,
@@ -84,6 +85,7 @@ export function PlayersPage() {
   // Dropdowns abertos
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  useBodyScrollLock(!!playerToDelete);
 
   const showToast = useCallback(
     (type: "success" | "error", title: string, message: string) => {
@@ -321,7 +323,10 @@ export function PlayersPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="space-y-4 font-sans text-zinc-900 pb-12" ref={dropdownRef}>
+    <div
+      className="w-full min-w-0 space-y-4 font-sans text-zinc-900 pb-12"
+      ref={dropdownRef}
+    >
       {/* CABEÇALHO DA PÁGINA (Conforme J01) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -876,7 +881,7 @@ export function PlayersPage() {
       {/* TABELA DE JOGADORES (Fidelidade ao grid do Figma J01-J04) */}
       <div className="bg-white border border-zinc-200/90 rounded-2xl shadow-xs">
         <div className="overflow-x-auto min-h-[360px]">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full min-w-[900px] text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-zinc-100 text-zinc-400 text-[11px] font-semibold bg-zinc-50/50">
                 <th className="py-3 px-4 font-semibold">Jogador</th>

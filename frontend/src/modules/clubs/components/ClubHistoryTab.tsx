@@ -254,7 +254,7 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
   }, [selectedPlayerId, allPlayersList]);
 
   return (
-    <div className="space-y-4 font-sans">
+    <div className="w-full min-w-0 space-y-4 font-sans">
       {/* Toast de CSV exportado (H02) */}
       {csvToast && (
         <div className="fixed bottom-6 right-6 z-[110] bg-white border border-zinc-200 rounded-xl p-4 shadow-xl flex items-start gap-3 max-w-sm animate-fade-in">
@@ -470,7 +470,7 @@ export function ClubHistoryTab({ clubId, clubCash }: ClubHistoryTabProps) {
         <div className="space-y-4">
           <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
+              <table className="w-full min-w-[850px] text-xs text-left">
                 <thead>
                   <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-400 text-[11px] font-semibold">
                     <th className="py-2.5 px-3 font-medium">Data e hora</th>

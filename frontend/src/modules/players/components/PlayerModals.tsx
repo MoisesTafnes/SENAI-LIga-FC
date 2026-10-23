@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { playersService } from "../services/players.service";
 import { clubsService } from "../../clubs/services/clubs.service";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock";
 import { Player, PlayerPosition } from "../types/player.types";
 
 const POSITIONS: { key: PlayerPosition; label: string; desc: string }[] = [
@@ -64,6 +65,8 @@ export function CreatePlayerModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CreateResult | null>(null);
+
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -257,8 +260,8 @@ export function CreatePlayerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-zinc-200 space-y-4 my-8">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200 space-y-4">
         <div className="flex items-start justify-between pb-3 border-b border-zinc-100">
           <div>
             <h2 className="text-base font-bold text-zinc-900">Novo jogador</h2>
@@ -323,7 +326,7 @@ export function CreatePlayerModal({
             <label className="block text-xs font-semibold text-zinc-700 mb-1.5">
               Posição
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {POSITIONS.map((pos) => {
                 const isSelected = formData.position === pos.key;
                 return (
@@ -352,7 +355,7 @@ export function CreatePlayerModal({
           </div>
 
           {/* Idade + Agilidade + Valor base */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-zinc-700 mb-1">
                 Idade
@@ -451,7 +454,7 @@ export function CreatePlayerModal({
               </p>
             )}
 
-            <div className="grid grid-cols-2 gap-4 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
               {/* Inputs */}
               <div className="space-y-2.5">
                 <div className="grid grid-cols-2 gap-2">
@@ -666,6 +669,7 @@ export function EditPlayerModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const hasClub = !!player.club_id;
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -714,8 +718,8 @@ export function EditPlayerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 space-y-4">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200 space-y-4">
         <div className="flex items-start justify-between pb-3 border-b border-zinc-100">
           <div>
             <h2 className="text-base font-bold text-zinc-900">
@@ -938,6 +942,8 @@ export function ConditionModal({
   const [error, setError] = useState<string | null>(null);
   const [isStarter, setIsStarter] = useState(false);
 
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     setCondition(player.condition);
     setError(null);
@@ -1031,8 +1037,8 @@ export function ConditionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 space-y-4">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
           <h2 className="text-base font-bold text-zinc-900">
             Alterar condição física

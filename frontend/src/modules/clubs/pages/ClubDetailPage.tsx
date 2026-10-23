@@ -122,7 +122,7 @@ export function ClubDetailPage() {
   const playersCount = club.players?.length || 0;
 
   return (
-    <div className="space-y-6 font-sans text-zinc-900 pb-12">
+    <div className="w-full min-w-0 space-y-6 font-sans text-zinc-900 pb-12">
       {/* Header do clube (C04 / C05) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -164,7 +164,7 @@ export function ClubDetailPage() {
 
       {/* Navegação por Abas */}
       <div className="border-b border-zinc-200">
-        <div className="flex items-center gap-6 text-xs font-semibold">
+        <div className="flex items-center gap-4 sm:gap-6 text-xs font-semibold overflow-x-auto">
           <button
             onClick={() => setActiveTab("squad")}
             className={`flex items-center gap-1.5 pb-2.5 border-b-2 transition-colors cursor-pointer ${

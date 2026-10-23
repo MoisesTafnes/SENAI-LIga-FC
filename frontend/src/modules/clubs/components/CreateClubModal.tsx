@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Shield, Banknote, AlertCircle } from "lucide-react";
 import { clubsService } from "../services/clubs.service";
 import { Club } from "../types/club.types";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock";
 
 interface CreateClubModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export function CreateClubModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [nameError, setNameError] = useState("");
   const [acronymError, setAcronymError] = useState("");
+
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -95,8 +98,8 @@ export function CreateClubModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-zinc-200">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-zinc-200">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-base font-bold text-zinc-900">Novo clube</h2>
           <button

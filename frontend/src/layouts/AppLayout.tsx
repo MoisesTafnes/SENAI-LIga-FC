@@ -11,11 +11,14 @@ import {
   RotateCw,
   PanelLeft,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { leagueService } from "../services/league.service";
 
 export function AppLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const location = useLocation();
 
   const [metrics, setMetrics] = useState({
@@ -137,11 +140,24 @@ export function AppLayout() {
   const breadcrumb = getBreadcrumb();
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-zinc-900 antialiased">
+    <div className="min-h-screen w-full bg-[#F8FAFC] flex font-sans text-zinc-900 antialiased">
       {/* SIDEBAR DO FIGMA */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-white border-r border-zinc-200 flex flex-col justify-between transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-20" : "w-64"
+        id="primary-navigation"
+        onClick={(event) => {
+          if (
+            event.target instanceof HTMLElement &&
+            event.target.closest("a")
+          ) {
+            setIsMobileNavOpen(false);
+          }
+        }}
+        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-white border-r border-zinc-200 flex flex-col justify-between transition-all duration-300 ease-in-out md:translate-x-0 ${
+          isCollapsed ? "md:w-20" : "md:w-64"
+        } ${
+          isMobileNavOpen
+            ? "visible translate-x-0"
+            : "invisible -translate-x-full md:visible"
         }`}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
@@ -160,6 +176,14 @@ export function AppLayout() {
                 </span>
               </div>
             )}
+            <button
+              type="button"
+              aria-label="Fechar menu"
+              onClick={() => setIsMobileNavOpen(false)}
+              className="md:hidden ml-auto p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* NAVEGAÇÃO AGRUPADA DO FIGMA */}
@@ -371,19 +395,38 @@ export function AppLayout() {
           )}
         </div>
       </aside>
+      {isMobileNavOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu tocando fora"
+          onClick={() => setIsMobileNavOpen(false)}
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        />
+      )}
 
       {/* CONTEÚDO PRINCIPAL */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
-          isCollapsed ? "pl-20" : "pl-64"
+          isCollapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >
         {/* HEADER SUPERIOR */}
-        <header className="h-14 bg-white border-b border-zinc-200/80 px-6 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-3">
+        <header className="h-14 bg-white border-b border-zinc-200/80 px-3 md:px-6 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <button
+              className="md:hidden p-1.5 rounded-lg text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
+              type="button"
+              onClick={() => setIsMobileNavOpen(true)}
+              aria-label="Abrir menu"
+              aria-controls="primary-navigation"
+              aria-expanded={isMobileNavOpen}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+              className="hidden md:inline-flex p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+              type="button"
               title={
                 isCollapsed
                   ? "Expandir barra lateral"
@@ -394,24 +437,24 @@ export function AppLayout() {
             </button>
 
             {/* BREADCRUMB */}
-            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
-              <span>{breadcrumb.category}</span>
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium min-w-0 overflow-hidden">
+              <span className="shrink-0">{breadcrumb.category}</span>
               <ChevronRight className="w-3 h-3 text-zinc-300" />
               {breadcrumb.subpage ? (
                 <>
                   <NavLink
                     to={breadcrumb.category === "Liga" ? "/matches" : "/clubs"}
-                    className="hover:text-zinc-700 transition-colors"
+                    className="hover:text-zinc-700 transition-colors shrink-0"
                   >
                     {breadcrumb.page}
                   </NavLink>
                   <ChevronRight className="w-3 h-3 text-zinc-300" />
-                  <span className="text-zinc-900 font-semibold">
+                  <span className="text-zinc-900 font-semibold truncate">
                     {breadcrumb.subpage}
                   </span>
                 </>
               ) : (
-                <span className="text-zinc-900 font-semibold">
+                <span className="text-zinc-900 font-semibold truncate">
                   {breadcrumb.page}
                 </span>
               )}
@@ -420,7 +463,8 @@ export function AppLayout() {
 
           <button
             onClick={() => window.location.reload()}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
+            type="button"
             title="Recarregar dados"
           >
             <RotateCw className="w-4 h-4" />
@@ -428,7 +472,7 @@ export function AppLayout() {
         </header>
 
         {/* CONTAINER DO ROUTER OUTLET */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-8 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
       </div>
