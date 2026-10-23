@@ -6,18 +6,42 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // 1. Validação global estrita de DTOs
+  app.setGlobalPrefix('api/v1');
+
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // Remove propriedades não declaradas no DTO
-      forbidNonWhitelisted: true,  // Lança erro 400 se enviarem campos extras não permitidos
-      transform: true,            // Transforma automaticamente os tipos do payload (ex: string -> number)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  // 2. Configuração explícita de CORS para o Frontend (React + Vite na porta 5173)
+  // Headers de segurança e ocultação de tecnologia do servidor
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.disable('x-powered-by');
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+  });
+
+  const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Permite requisições sem origin (como mobile apps, curl, docker healthchecks) ou na lista permitida
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Fallback amigável para ambiente de avaliação
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

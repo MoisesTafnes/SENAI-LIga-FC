@@ -22,6 +22,7 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
     transacao: {
       create: jest.fn().mockResolvedValue({ id: 1 }),
       findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
   };
@@ -115,6 +116,70 @@ describe('MarketService - Regras Financeiras e Contratuais', () => {
 
       expect(result.penalty_fee).toBe(10.00);
       expect(result.transaction_id).toBe(1);
+    });
+
+    it('deve calcular comissão progressiva de 10% até 10 moedas e 20% sobre o excedente de lucro (RN16)', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 1);
+
+      mockPrismaService.jogador.findFirst.mockResolvedValue({
+        id: 7,
+        nome: 'Atacante Lucrativo',
+        valorBase: 40.0,
+        condicao: 'APTO',
+        agilidade: 80,
+        idade: 25,
+        clubeId: 1,
+        contratos: [
+          {
+            id: 101,
+            clubeId: 1,
+            situacao: 'ATIVO',
+            valorCompra: 25.0,
+            fidelidadeAte: pastDate,
+          },
+        ],
+      });
+
+      mockPrismaService.clube.findUnique.mockResolvedValue({ id: 1, caixa: 100.0 });
+      mockPrismaService.transacao.create.mockResolvedValue({ id: 2 });
+
+      const result = await service.sellPlayer(7);
+
+      expect(result.profit).toBe(15.0);
+      expect(result.penalty_fee).toBe(0.0);
+      expect(result.league_commission).toBe(2.0);
+      expect(result.cash_change).toBe(38.0);
+    });
+
+    it('deve bloquear recompra de jogador pelo mesmo clube que o vendeu anteriormente (RN12 - 409)', async () => {
+      mockPrismaService.clube.findUnique.mockResolvedValue({
+        id: 1,
+        nome: 'Clube Vendedor',
+        caixa: 500.0,
+        jogadores: [],
+      });
+
+      mockPrismaService.jogador.findFirst.mockResolvedValue({
+        id: 8,
+        nome: 'Jogador Negociado',
+        valorBase: 30.0,
+        condicao: 'APTO',
+        agilidade: 50,
+        idade: 24,
+        clubeId: null,
+      });
+
+      mockPrismaService.transacao.findFirst.mockResolvedValue({
+        id: 50,
+        clubeId: 1,
+        jogadorId: 8,
+        tipo: 'VENDA',
+      });
+
+      await expect(
+        service.buyPlayer(8, { club_id: 1, loyalty_until: '2027-10-18T20:00:00-03:00' }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

@@ -48,8 +48,20 @@ export class MarketService {
       throw new ConflictException('Jogadores doentes não podem ser transferidos.');
     }
 
-    if (player.clubeId === club_id) {
-      throw new ConflictException('O jogador já pertence a este clube.');
+    if (player.clubeId !== null) {
+      throw new ConflictException('Apenas jogadores livres podem ser comprados.');
+    }
+
+    const previousSale = await this.prisma.transacao.findFirst({
+      where: {
+        clubeId: club_id,
+        jogadorId: playerId,
+        tipo: 'VENDA',
+      },
+    });
+
+    if (previousSale) {
+      throw new ConflictException('Um clube não pode comprar um jogador que ele mesmo já vendeu.');
     }
 
     const marketValue = PlayerCalculatorDomain.calculateMarketValue(
@@ -134,16 +146,32 @@ export class MarketService {
       });
 
       return {
-        message: 'Compra de jogador realizada com sucesso.',
+        id: transactionRecord.id,
         transaction_id: transactionRecord.id,
+        club_id: club_id,
         buyer_club_id: club_id,
         seller_club_id: sellerClubId,
         player_id: player.id,
+        player_name: player.nome,
+        type: 'COMPRA',
+        value: marketValue,
         market_value: marketValue,
+        fee: leagueFee,
         league_fee: leagueFee,
+        penalty: 0.00,
+        profit: null,
+        cash_change: -totalCost,
         total_cost: totalCost,
+        created_at: now.toISOString(),
+        contract: {
+          purchase_value: marketValue,
+          loyalty_until: loyaltyUntilDate.toISOString(),
+          status: 'ATIVO',
+        },
+        club_cash: Number(buyerClub.caixa) - totalCost,
         contract_id: newContract.id,
         loyalty_until: loyaltyUntilDate.toISOString(),
+        message: 'Compra de jogador realizada com sucesso.',
       };
     });
   }
@@ -251,63 +279,153 @@ export class MarketService {
       });
 
       return {
-        message: 'Venda de jogador realizada com sucesso.',
+        id: transactionRecord.id,
         transaction_id: transactionRecord.id,
+        club_id: sellerClubId,
         seller_club_id: sellerClubId,
         player_id: player.id,
-        purchase_value: originalPurchaseValue,
+        player_name: player.nome,
+        type: 'VENDA',
+        value: saleValue,
         sale_value: saleValue,
-        days_remaining_loyalty: daysRemaining,
-        penalty_fee: penaltyFee,
-        profit,
+        fee: leagueCommission,
         league_commission: leagueCommission,
+        penalty: penaltyFee,
+        penalty_fee: penaltyFee,
+        profit: profit,
+        cash_change: netReceivable,
         net_receivable: netReceivable,
-        new_cash: newCash,
+        created_at: now.toISOString(),
+        purchase_value: originalPurchaseValue,
+        remaining_days: daysRemaining,
+        days_remaining_loyalty: daysRemaining,
+        penalty_rate: penaltyPercentage * 100,
         contract_status: contractStatus,
+        club_cash: newCash,
+        new_cash: newCash,
+        message: 'Venda de jogador realizada com sucesso.',
       };
     });
   }
 
-  async getTransactions() {
+  async getTransactionsByClub(
+    clubId: number,
+    type?: string,
+    playerId?: number,
+  ) {
+    const club = await this.prisma.clube.findUnique({ where: { id: clubId } });
+    if (!club) {
+      throw new NotFoundException('Clube não encontrado.');
+    }
+
+    if (playerId) {
+      const player = await this.prisma.jogador.findFirst({
+        where: { id: playerId, excluidoEm: null },
+      });
+      if (!player) {
+        throw new NotFoundException('Jogador não encontrado ou excluído.');
+      }
+    }
+
+    const where: any = { clubeId: clubId };
+
+    if (type) {
+      const types = type.split(',');
+      where.tipo = { in: types };
+    }
+
+    if (playerId) {
+      where.jogadorId = playerId;
+    }
+
     const transactions = await this.prisma.transacao.findMany({
-      orderBy: { criadoEm: 'desc' },
-      include: {
-        clube: true,
-        jogador: true,
-      },
+      where,
+      orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
     });
 
-    return transactions.map((t) => ({
+    const data = transactions.map((t) => ({
       id: t.id,
+      club_id: t.clubeId,
+      player_id: t.jogadorId,
+      player_name: t.nomeJogador,
       type: t.tipo,
-      club_name: t.clube ? t.clube.nome : 'Desconhecido',
-      player_name: t.nomeJogador || (t.jogador ? t.jogador.nome : 'Desconhecido'),
       value: Number(t.valor),
       fee: Number(t.taxa),
       penalty: Number(t.multa),
       profit: t.lucro !== null ? Number(t.lucro) : null,
-      cash_variation: Number(t.variacaoCaixa),
-      date: t.criadoEm.toISOString(),
+      cash_change: Number(t.variacaoCaixa),
+      created_at: t.criadoEm.toISOString(),
     }));
+
+    let totalSpent = 0;
+    let totalReceived = 0;
+    let totalFees = 0;
+    let totalPenalties = 0;
+    let totalProfit = 0;
+
+    for (const item of data) {
+      if (item.type === 'COMPRA') {
+        totalSpent += item.value + item.fee;
+      } else if (item.type === 'VENDA') {
+        totalReceived += item.cash_change;
+        totalPenalties += item.penalty;
+        if (item.profit !== null) {
+          totalProfit += item.profit;
+        }
+      }
+      totalFees += item.fee;
+    }
+
+    return {
+      data,
+      summary: {
+        total_spent: PlayerCalculatorDomain.roundHalfAwayFromZero(totalSpent, 2),
+        total_received: PlayerCalculatorDomain.roundHalfAwayFromZero(totalReceived, 2),
+        total_fees: PlayerCalculatorDomain.roundHalfAwayFromZero(totalFees, 2),
+        total_penalties: PlayerCalculatorDomain.roundHalfAwayFromZero(totalPenalties, 2),
+        total_profit: PlayerCalculatorDomain.roundHalfAwayFromZero(totalProfit, 2),
+      },
+    };
   }
 
-  async exportTransactionsCsv(): Promise<string> {
-    const transactions = await this.getTransactions();
-    const headers = ['ID', 'Tipo', 'Clube', 'Jogador', 'Valor', 'Taxa/Comissao', 'Multa', 'Lucro', 'Variacao Caixa', 'Data'];
+  async exportTransactionsCsv(
+    clubId: number,
+    type?: string,
+    playerId?: number,
+  ): Promise<string> {
+    const result = await this.getTransactionsByClub(clubId, type, playerId);
+    const header = 'data_hora;tipo;jogador;valor;taxa_ou_comissao;multa;lucro;variacao_caixa';
 
-    const rows = transactions.map((t) => [
-      t.id,
+    const formatDecimal = (val: number | null) => {
+      if (val === null || val === undefined) return '';
+      return val.toFixed(2).replace('.', ',');
+    };
+
+    const escapeName = (name: string) => {
+      if (name.includes(';') || name.includes('"')) {
+        return `"${name.replace(/"/g, '""')}"`;
+      }
+      return name;
+    };
+
+    const rows = result.data.map((t) => [
+      t.created_at,
       t.type,
-      `"${t.club_name}"`,
-      `"${t.player_name}"`,
-      t.value.toFixed(2),
-      t.fee.toFixed(2),
-      t.penalty.toFixed(2),
-      t.profit !== null ? t.profit.toFixed(2) : 'N/A',
-      t.cash_variation.toFixed(2),
-      t.date,
+      escapeName(t.player_name),
+      formatDecimal(t.value),
+      formatDecimal(t.fee),
+      formatDecimal(t.penalty),
+      t.profit !== null ? formatDecimal(t.profit) : '',
+      formatDecimal(t.cash_change),
     ]);
 
-    return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const lines = [header, ...rows.map((r) => r.join(';'))];
+    return lines.join('\n') + '\n';
+  }
+
+  async getTransactions() {
+    return this.prisma.transacao.findMany({
+      orderBy: { criadoEm: 'desc' },
+    });
   }
 }

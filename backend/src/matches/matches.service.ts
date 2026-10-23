@@ -79,15 +79,14 @@ export class MatchesService {
 
     let homeGoals = 0;
     let awayGoals = 0;
-    const duelsData = [];
+    const duelsData: any[] = [];
 
     for (const config of duelConfigs) {
       const isHomeAttacking = config.attackerTeam === 'home';
       const atkClub = isHomeAttacking ? homeClub : awayClub;
-      const defClub = isHomeAttacking ? awayClub : homeClub;
 
-      const attacker = isHomeAttacking ? homePlayers[config.atkIdx] : awayPlayers[config.atkIdx];
-      const defender = isHomeAttacking ? awayPlayers[config.defIdx] : homePlayers[config.defIdx];
+      const attacker: any = isHomeAttacking ? homePlayers[config.atkIdx] : awayPlayers[config.atkIdx];
+      const defender: any = isHomeAttacking ? awayPlayers[config.defIdx] : homePlayers[config.defIdx];
 
       const atkAttrInfo = this.getAttackingAttributeName(attacker.position);
       const rawAtkVal = attacker[atkAttrInfo.key];
@@ -116,21 +115,11 @@ export class MatchesService {
         atributoAtaque: atkAttrInfo.key,
         atributoDefesa: 'defending',
         valorAtaque: adjAtkVal,
-        valorDefesa: adjDefDefVal(defender.defending, defender.condition),
+        valorDefesa: adjDefVal,
         gol: isGoal,
       });
     }
 
-    // Helper interno inline para clareza
-    function adjDefDefVal(val: number, cond: string) {
-      return cond === 'MAL_CONDICIONADO' ? Math.round(val * 0.85) : val;
-    }
-
-    let resultStatus: 'MANDANTE' | 'VISITANTE' | 'EMPATE' = 'EMPATE';
-    if (homeGoals > awayGoals) resultStatus = 'MANDANTE';
-    else if (awayGoals > homeGoals) resultStatus = 'VISITANTE';
-
-    // 4. Salvar partida e duelos em transação atômica
     const createdMatch = await this.prisma.$transaction(async (tx) => {
       const match = await tx.partida.create({
         data: {
@@ -138,8 +127,8 @@ export class MatchesService {
           visitanteId: away_club_id,
           golsMandante: homeGoals,
           golsVisitante: awayGoals,
-          formacaoMandante: homeLineup.formation,
-          formacaoVisitante: awayLineup.formation,
+          formacaoMandante: homeLineup.formation || '2-1-1',
+          formacaoVisitante: awayLineup.formation || '2-1-1',
           duelos: {
             create: duelsData,
           },
